@@ -1,0 +1,38 @@
+version: "3.8"
+
+
+networks:
+  securocracy-network:
+    name: securocracy-network
+    driver: bridge
+
+
+services:
+  server-service:
+    build:
+      context: .
+      target: server
+    container_name: ${SERVER_CONTAINER_NAME}
+    command: python -u -m server
+    env_file:
+      - .env
+    networks:
+      - securocracy-network
+    ports:
+      - ${PORT}:${PORT}
+    volumes:
+      - ./volume:/volume
+
+  client-service:
+    build:
+      context: .
+      target: client
+    container_name: ${CLIENT_CONTAINER_NAME}
+    depends_on:
+      - server-service
+    command: python -u -m client
+    env_file:
+      - .env
+    networks:
+      - securocracy-network
+
