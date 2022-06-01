@@ -1,2 +1,2 @@
 # dining_cryptocoryne
-Crypto project implementing dining cryptographers/veto network problem. Also a melancholy, get-back-together story.
+Crypto project implementing open veto network (OV-net). Also a melancholy, get-back-together story.
