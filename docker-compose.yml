@@ -1,11 +1,9 @@
 version: "3.8"
 
-
 networks:
   securocracy-network:
     name: securocracy-network
     driver: bridge
-
 
 services:
   server-service:
@@ -35,4 +33,3 @@ services:
       - .env
     networks:
       - securocracy-network
-
