@@ -37,7 +37,7 @@ class AbstractMessage:
 class UserLogin(AbstractMessage):
     """User login message."""
 
-    def __init__(self, user_id: str) -> None:
+    def __init__(self) -> None:
         """Create a user login message to server."""
         super().__init__()
         self.header.msg_id = MsgId.USER_LOGIN

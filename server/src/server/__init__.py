@@ -49,7 +49,7 @@ class Server:
 
         # Create a rotating file handler
         handler = logging.handlers.RotatingFileHandler(
-            filename=os.environ["SERVER_LOGFILE_PATH"],
+            filename=os.environ["SERVER_LOGFILE_PATH"], mode="w"
         )
 
         # Associate the formatter with the handler...

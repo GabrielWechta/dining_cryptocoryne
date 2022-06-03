@@ -6,7 +6,13 @@ import ssl
 
 import websockets.client as ws
 
-from common.messages_types import AbstractMessage, MsgId, msg_recv, msg_send
+from common.messages_types import (
+    AbstractMessage,
+    MsgId,
+    UserLogin,
+    msg_recv,
+    msg_send,
+)
 
 
 class WebsocketInterface:
@@ -18,7 +24,7 @@ class WebsocketInterface:
 
     def __init__(self, user_id):
         """Construct a websocket interface instance."""
-        self.log = logging.getLogger("cans-logger")
+        self.log = logging.getLogger("logger")
         self.user_id = user_id
         self.message_handlers = {
             MsgId.USER_LOGIN: self._handle_message_user_login,
@@ -33,10 +39,17 @@ class WebsocketInterface:
         ssl_context.load_verify_locations(certpath)
         ssl_context.check_hostname = False
 
-        self.log.debug(f"Connecting to the server at {url}...")
-
+        self.log.info(f"Connecting to the server at {url}...")
+        self.log.info("here")
         async with ws.connect(url, ssl=ssl_context) as conn:
-            self.log.debug("Successfully connected to the server...")
+            self.log.info(
+                "Successfully connected to the server. Running handshake..."
+            )
+            await msg_send(UserLogin(), conn)
+            self.log.info(
+                "Handshake complete. Forking to handle"
+                + " upstream and downstream concurrently..."
+            )
             await asyncio.gather(
                 self._handle_upstream(conn),
                 self._handle_downstream(conn),

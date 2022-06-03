@@ -16,6 +16,8 @@ class Client:
         """Construct the client object."""
         self._setup_logger()
         self.log = logging.getLogger("logger")
+        self.log.info("Client is alive.")
+        print("CLIENT IS ALIVE")
 
         self.server_hostname = os.environ["SERVER_HOSTNAME"]
         self.server_port = os.environ["PORT"]
@@ -28,7 +30,7 @@ class Client:
 
     def run(self) -> None:
         """Run client."""
-
+        self.log.info(f"wss://{self.server_hostname}:{self.server_port}")
         # Connect to the server
         self.event_loop.run_until_complete(
             asyncio.gather(  # noqa: FKA01
@@ -52,7 +54,7 @@ class Client:
 
         # Create a handler
         handler = logging.handlers.RotatingFileHandler(
-            filename=os.environ["CLIENT_LOGFILE_PATH"],
+            filename=os.environ["CLIENT_LOGFILE_PATH"], mode="w"
         )
 
         # Associate the formatter with the handler...
@@ -60,7 +62,7 @@ class Client:
         # ...and the handler with the logger
         logger.addHandler(handler)
 
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
 
     async def _handle_downstream_message(self) -> None:
         """Handle downstream user messages."""

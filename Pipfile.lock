@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "945e6b68056a9ce59f7c47def37a7c704f9dc1cddcdf9b3b5f26de7c3a2c09fc"
+            "sha256": "81c13f60d2c4df65be5959bf4db8adba18eaf551862e71aa6d3393040414793f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,8 +17,8 @@
     },
     "default": {
         "client": {
-            "path": "./client",
-            "version": "==0.0.0"
+            "editable": true,
+            "path": "./client"
         },
         "common": {
             "editable": true,
