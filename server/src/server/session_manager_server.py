@@ -35,9 +35,9 @@ class SessionManager:
         )
 
     async def authed_user_entry(
-            self,
-            conn: WebSocketServerProtocol,
-            user_id: str,
+        self,
+        conn: WebSocketServerProtocol,
+        user_id: str,
     ) -> None:
         """Handle an authenticated user."""
         # Save the session to have consistent state when
@@ -60,9 +60,8 @@ class SessionManager:
         except ConnectionClosed as e:
             await self.__handle_connection_closed(user_id, e)
 
-
     async def __handle_connection_closed(
-            self, user_id: str, exception: ConnectionClosed
+        self, user_id: str, exception: ConnectionClosed
     ) -> None:
         """Handle the client closing the connection."""
         # Remove the client's session

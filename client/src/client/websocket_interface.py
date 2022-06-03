@@ -6,7 +6,7 @@ import ssl
 
 import websockets.client as ws
 
-from common.messages_types import MsgId, AbstractMessage, msg_send, msg_recv
+from common.messages_types import AbstractMessage, MsgId, msg_recv, msg_send
 
 
 class WebsocketInterface:
@@ -22,13 +22,11 @@ class WebsocketInterface:
         self.user_id = user_id
         self.message_handlers = {
             MsgId.USER_LOGIN: self._handle_message_user_login,
-
         }
         self.upstream_message_queue: asyncio.Queue = asyncio.Queue()
         self.downstream_message_queue: asyncio.Queue = asyncio.Queue()
 
-    async def connect(
-            self, url: str, certpath: str) -> None:
+    async def connect(self, url: str, certpath: str) -> None:
         """Connect to the server."""
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
@@ -38,9 +36,7 @@ class WebsocketInterface:
         self.log.debug(f"Connecting to the server at {url}...")
 
         async with ws.connect(url, ssl=ssl_context) as conn:
-            self.log.debug(
-                "Successfully connected to the server..."
-            )
+            self.log.debug("Successfully connected to the server...")
             await asyncio.gather(
                 self._handle_upstream(conn),
                 self._handle_downstream(conn),
@@ -63,7 +59,7 @@ class WebsocketInterface:
             await msg_send(message, conn)
 
     async def _handle_downstream(
-            self, conn: ws.WebSocketClientProtocol
+        self, conn: ws.WebSocketClientProtocol
     ) -> None:
         """Handle server to client traffic."""
         while True:
@@ -78,7 +74,8 @@ class WebsocketInterface:
             #         + f"{message.header.msg_id}"
             #     )
 
-    async def _handle_message_user_login(self,
-                                         message: AbstractMessage) -> None:
+    async def _handle_message_user_login(
+        self, message: AbstractMessage
+    ) -> None:
         """Handle message type USER_LOGIN."""
         payload = message.payload["text"]

@@ -6,8 +6,9 @@ import logging.handlers
 import os
 import random
 
-from .websocket_interface import WebsocketInterface
 from common.messages_types import AbstractMessage
+
+from .websocket_interface import WebsocketInterface
 
 
 class Client:

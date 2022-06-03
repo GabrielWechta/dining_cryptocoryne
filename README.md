@@ -12,6 +12,7 @@ pipenv shell
 ```
 
 cert gen:
+
 ```bash
 openssl req -x509 -newkey rsa:4096 -keyout securocracy_key.pem -out securocracy_cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
 ```

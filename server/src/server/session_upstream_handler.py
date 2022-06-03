@@ -3,9 +3,7 @@
 import logging
 from typing import Dict
 
-from common.messages_types import msg_recv
-
-from common.messages_types import AbstractMessage
+from common.messages_types import AbstractMessage, msg_recv
 from server.client_session import ClientSession
 from server.session_event import SessionEvent
 
@@ -18,16 +16,14 @@ class SessionUpstreamHandler:
     """
 
     def __init__(
-            self,
-            sessions: Dict[str, ClientSession],
+        self,
+        sessions: Dict[str, ClientSession],
     ) -> None:
         """Construct the upstream handler."""
         self.log = logging.getLogger("logger")
         # Store a reference to the managed sessions
         self.sessions = sessions
-        self.message_handlers = {
-
-        }
+        self.message_handlers = {}
 
     async def handle_upstream(self, session: ClientSession) -> None:
         """Handle upstream traffic, i.e. client to server.
@@ -57,13 +53,13 @@ class SessionUpstreamHandler:
                 )
 
     def __upstream_message_valid(
-            self, message: AbstractMessage, session: ClientSession
+        self, message: AbstractMessage, session: ClientSession
     ) -> bool:
         """Validate an inbound message with regards to the current session."""
         return message.header.sender == session.user_id
 
     async def __send_event(
-            self, event: SessionEvent, session: ClientSession
+        self, event: SessionEvent, session: ClientSession
     ) -> None:
         """Send an event.
 

@@ -56,7 +56,7 @@ class DeserializationError(AbstractMessageException):
 
 
 async def msg_recv(
-        socket: Union[WebSocketClientProtocol, WebSocketServerProtocol]
+    socket: Union[WebSocketClientProtocol, WebSocketServerProtocol]
 ) -> AbstractMessage:
     """Receive a message from a socket."""
     serialized_msg = str(await socket.recv())
@@ -64,8 +64,8 @@ async def msg_recv(
 
 
 async def msg_send(
-        msg: AbstractMessage,
-        socket: Union[WebSocketClientProtocol, WebSocketServerProtocol],
+    msg: AbstractMessage,
+    socket: Union[WebSocketClientProtocol, WebSocketServerProtocol],
 ) -> None:
     """Send message to a socket."""
     serialized_msg = __serialize(msg)

@@ -50,4 +50,3 @@ class LogoutEvent(SessionEvent):
     def __init__(self, peer_id: str) -> None:
         """Initialize a logout event."""
         super().__init__(EventType.LOGOUT, {"peer": peer_id})
-

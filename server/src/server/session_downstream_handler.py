@@ -3,10 +3,9 @@
 import logging
 from typing import Any, Dict
 
-from common.messages_types import (
-    msg_send, UserLogin)
-
+from common.messages_types import UserLogin, msg_send
 from server.client_session import ClientSession
+
 from .session_event import EventType, SessionEvent
 
 
@@ -18,8 +17,8 @@ class SessionDownstreamHandler:
     """
 
     def __init__(
-            self,
-            sessions: Dict[str, ClientSession],
+        self,
+        sessions: Dict[str, ClientSession],
     ) -> None:
         """Construct the downstream handler."""
         self.log = logging.getLogger("logger")
@@ -55,14 +54,13 @@ class SessionDownstreamHandler:
         await session.event_queue.put(event)
 
     async def __handle_event_login(
-            self, event: SessionEvent, session: ClientSession
+        self, event: SessionEvent, session: ClientSession
     ) -> None:
         """Handle session event of type LOGIN."""
         assert isinstance(event.payload, dict)
         payload: Dict[str, Any] = event.payload
         peer = payload["peer"]
-        message = UserLogin(user_id="42"
-                            )
+        message = UserLogin(user_id="42")
 
         await msg_send(message, session.connection)
 

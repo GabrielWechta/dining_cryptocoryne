@@ -10,14 +10,16 @@ import ssl
 
 import websockets.server as ws
 
-from .session_manager_server import SessionManager
 from common.messages_types import msg_recv
+
+from .session_manager_server import SessionManager
+
 
 class ConnectionListener:
     """Listen on a public port and authenticate incoming clients."""
 
     def __init__(
-            self, hostname: str, port: int, certpath: str, keypath: str
+        self, hostname: str, port: int, certpath: str, keypath: str
     ) -> None:
         """Construct a connection listener instance."""
         self.hostname = hostname
@@ -42,15 +44,15 @@ class ConnectionListener:
         )
 
         async with ws.serve(
-                ws_handler=self.__handle_connection,
-                host=self.hostname,
-                port=self.port,
-                ssl=ssl_context,
+            ws_handler=self.__handle_connection,
+            host=self.hostname,
+            port=self.port,
+            ssl=ssl_context,
         ):
             await asyncio.Future()
 
     async def __handle_connection(
-            self, conn: ws.WebSocketServerProtocol
+        self, conn: ws.WebSocketServerProtocol
     ) -> None:
         """Handle a new incoming connection."""
         self.log.debug(
