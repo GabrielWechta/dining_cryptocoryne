@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-client = "*"
+client = {editable = true, path = "./client"}
+common = {editable = true, path = "./common"}
 
 [dev-packages]
 

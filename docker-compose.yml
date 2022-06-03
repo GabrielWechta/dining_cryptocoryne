@@ -19,7 +19,7 @@ services:
     ports:
       - ${PORT}:${PORT}
     volumes:
-      - ./volume:/volume
+      - ./log:/log
 
   client-service:
     build:

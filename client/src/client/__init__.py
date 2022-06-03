@@ -4,41 +4,43 @@ import asyncio
 import logging
 import logging.handlers
 import os
-from datetime import datetime
+import random
+
+from .websocket_interface import WebsocketInterface
+from common.messages_types import AbstractMessage
 
 
 class Client:
     def __init__(self) -> None:
         """Construct the client object."""
         self._setup_logger()
-        self.server_hostname = os.environ["CANS_SERVER_HOSTNAME"]
-        self.server_port = os.environ["CANS_PORT"]
-        self.certpath = os.environ["CANS_SELF_SIGNED_CERT_PATH"]
-
         self.log = logging.getLogger("logger")
+
+        self.server_hostname = os.environ["SERVER_HOSTNAME"]
+        self.server_port = os.environ["PORT"]
+        self.certpath = os.environ["SELF_SIGNED_CERT_PATH"]
 
         self.event_loop = asyncio.get_event_loop()
 
-        self.session_manager = SessionManager(
-            keys=(self.priv_key, self.pub_key),
-            account=self.account,
-        )
+        self.user_id = hash(random.randint(0, 100_000_000))
+        self.websocket_interface = WebsocketInterface(user_id=self.user_id)
 
     def run(self) -> None:
-        """Run dummy client application."""
+        """Run client."""
+
         # Connect to the server
         self.event_loop.run_until_complete(
             asyncio.gather(  # noqa: FKA01
-                self.session_manager.connect(
+                self.websocket_interface.connect(
                     url=f"wss://{self.server_hostname}:{self.server_port}",
                     certpath=self.certpath,
-                    friends=[self.echo_peer_id],
                 ),
                 self._handle_downstream_message(),
             )
         )
 
-    def _setup_logger(self) -> None:
+    @staticmethod
+    def _setup_logger() -> None:
         """Setup logger."""
         logger = logging.getLogger("logger")
 
@@ -62,22 +64,12 @@ class Client:
     async def _handle_downstream_message(self) -> None:
         """Handle downstream user messages."""
         while True:
-            message = await self.session_manager.receive_message()
+            message = await self.websocket_interface.receive_message()
 
             self.log.debug(f"Received message from {message.header.sender}")
 
-    async def _handle_upstream_message(self, message_model: Message) -> None:
+    async def _handle_upstream_message(self, message: AbstractMessage) -> None:
         """Handle an upstream message."""
-        receiver = message_model.to_user
-        message, cookie = self.session_manager.user_message_to(
-            receiver.id, message_model.body
-        )
+        self.log.debug(f"Sending message of type {message.msg_id}")
 
-        # TODO: Use the cookie to find corresponding acknowledge later
-
-        self.log.debug(
-            f"Sending message to {message.header.receiver}"
-            + f" (cookie: {cookie})..."
-        )
-
-        await self.session_manager.send_message(message)
+        await self.websocket_interface.send_message(message)

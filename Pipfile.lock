@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "48ebb46b73385ed1b853289f39e3f26cd727639e0d523ad3200e396b542acea9"
+            "sha256": "945e6b68056a9ce59f7c47def37a7c704f9dc1cddcdf9b3b5f26de7c3a2c09fc"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -19,6 +19,10 @@
         "client": {
             "path": "./client",
             "version": "==0.0.0"
+        },
+        "common": {
+            "editable": true,
+            "path": "./common"
         },
         "pycryptodomex": {
             "hashes": [
