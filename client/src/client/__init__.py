@@ -69,7 +69,9 @@ class Client:
         while True:
             message = await self.websocket_interface.receive_message()
 
-            self.log.debug(f"Received message from {message.header.sender}")
+            self.log.debug(
+                f"Received message from {message.header.sender}, payload {message.payload}"
+            )
 
     async def _handle_upstream_message(self, message: AbstractMessage) -> None:
         """Handle an upstream message."""

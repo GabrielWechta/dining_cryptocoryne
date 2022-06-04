@@ -40,14 +40,13 @@ class WebsocketInterface:
         ssl_context.check_hostname = False
 
         self.log.info(f"Connecting to the server at {url}...")
-        self.log.info("here")
         async with ws.connect(url, ssl=ssl_context) as conn:
             self.log.info(
-                "Successfully connected to the server. Running handshake..."
+                "Successfully connected to the server. Running login..."
             )
             await msg_send(UserLogin(), conn)
             self.log.info(
-                "Handshake complete. Forking to handle"
+                "Login complete. Forking to handle"
                 + " upstream and downstream concurrently..."
             )
             await asyncio.gather(

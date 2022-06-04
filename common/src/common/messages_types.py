@@ -15,6 +15,7 @@ class MsgId(IntEnum):
 
     NO_TYPE = auto()
     USER_LOGIN = auto()
+    SET_USER_ID = auto()
 
 
 class AbstractMessage:
@@ -41,6 +42,15 @@ class UserLogin(AbstractMessage):
         """Create a user login message to server."""
         super().__init__()
         self.header.msg_id = MsgId.USER_LOGIN
+
+
+class SetUserId(AbstractMessage):
+    """User set id message."""
+
+    def __init__(self, user_id) -> None:
+        super().__init__()
+        self.header.msg_id = MsgId.SET_USER_ID
+        self.payload = {"user_id": user_id}
 
 
 class AbstractMessageException(Exception):

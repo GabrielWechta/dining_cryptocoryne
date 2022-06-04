@@ -13,7 +13,7 @@ from server.session_upstream_handler import SessionUpstreamHandler
 from .client_session import ClientSession
 
 
-class SessionManager:
+class SessionsManager:
     """Server session manager.
 
     Manage client sessions and maintain a mapping between
