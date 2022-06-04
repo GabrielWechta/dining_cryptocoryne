@@ -21,11 +21,11 @@ services:
     volumes:
       - ./log:/log
 
-  client-service:
+  yes-client-service:
     build:
       context: .
       target: client
-    container_name: ${CLIENT_CONTAINER_NAME}
+    container_name: ${YES_CLIENT_CONTAINER_NAME}
     depends_on:
       - server-service
     command: python -u -m client

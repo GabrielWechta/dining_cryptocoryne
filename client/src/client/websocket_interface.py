@@ -3,13 +3,16 @@
 import asyncio
 import logging
 import ssl
+import time
 
 import websockets.client as ws
 
 from common.messages_types import (
     AbstractMessage,
+    AbstractMessageException,
     MsgId,
     UserLogin,
+    ZKPForPubKey,
     msg_recv,
     msg_send,
 )
@@ -22,12 +25,14 @@ class WebsocketInterface:
     and forward client messages to the server.
     """
 
-    def __init__(self, user_id):
+    def __init__(self) -> None:
         """Construct a websocket interface instance."""
         self.log = logging.getLogger("logger")
-        self.user_id = user_id
+        self.always_vote = None
+
+        self.user_id = None
         self.message_handlers = {
-            MsgId.USER_LOGIN: self._handle_message_user_login,
+            MsgId.SEND_QUESTION: self._handle_message_send_question,
         }
         self.upstream_message_queue: asyncio.Queue = asyncio.Queue()
         self.downstream_message_queue: asyncio.Queue = asyncio.Queue()
@@ -44,9 +49,36 @@ class WebsocketInterface:
             self.log.info(
                 "Successfully connected to the server. Running login..."
             )
-            await msg_send(UserLogin(), conn)
+
+            # TODO change public key to real public key
+            public_key = str(hash(time.time()))
+            await msg_send(UserLogin(public_key=public_key), conn)
+            self.log.info(f"Send login - {public_key=}.")
+
+            recv_user_id_message = await msg_recv(conn)
+            user_id = recv_user_id_message.payload["user_id"]
+            self.user_id = user_id
+            self.log.info(f"I got {user_id=}.")
+
+            # TODO change proof to real proof
+            proof = 42
+            await msg_send(ZKPForPubKey(proof=proof), conn)
+            self.log.info(f"Client {user_id} sends pub key proof - {proof=}.")
+
+            recv_acceptance_message = await msg_recv(conn)
+            acceptance = recv_acceptance_message.payload["acceptance"]
+            if acceptance is True:
+                self.log.info(
+                    f"Client {user_id} ZKP for public key was accepted."
+                )
+            else:
+                self.log.error(
+                    f"Client {user_id} ZKP for public key was rejected."
+                )
+                raise AbstractMessageException("ZKP for public key rejected.")
+
             self.log.info(
-                "Login complete. Forking to handle"
+                f"Client {user_id} ends handshake and forks to handle"
                 + " upstream and downstream concurrently..."
             )
             await asyncio.gather(
@@ -73,21 +105,37 @@ class WebsocketInterface:
     async def _handle_downstream(
         self, conn: ws.WebSocketClientProtocol
     ) -> None:
-        """Handle server to client traffic."""
+        """Handle downstream traffic, i.e. server to client."""
         while True:
             message = await msg_recv(conn)
-            self.log.info(message)
-            # if message.header.msg_id in self.message_handlers.keys():
-            #     # Call a registered handler
-            #     await self.message_handlers[message.header.msg_id](message)
-            # else:
-            #     self.log.warning(
-            #         "Received unexpected message with ID:"
-            #         + f"{message.header.msg_id}"
-            #     )
 
-    async def _handle_message_user_login(
+            if message.header.msg_id in self.message_handlers.keys():
+                # Call a registered handler
+                await self.message_handlers[message.header.msg_id](message)
+            else:
+                self.log.warning(
+                    "Received unexpected message with ID:"
+                    + f"{message.header.msg_id}"
+                )
+
+    async def _handle_message_send_question(
         self, message: AbstractMessage
     ) -> None:
         """Handle message type USER_LOGIN."""
-        payload = message.payload["text"]
+        the_question = message.payload["the_question"]
+        print(the_question)
+        vote = None
+        if self.always_vote is None:
+            while vote is None:
+                vote = input("Your vote:")
+                if vote.casefold() == "yes".casefold():
+                    vote_repr = 1
+                elif vote.casefold() == "no".casefold():
+                    vote_repr = 0
+                else:
+                    print("Type 'yes' or 'no'.")
+                    vote = None
+        else:
+            vote_repr = self.always_vote
+
+        print(vote_repr)

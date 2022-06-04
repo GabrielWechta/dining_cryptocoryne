@@ -1,7 +1,6 @@
 """Class representing a client session with the server."""
 
 import asyncio
-from typing import Dict, List
 
 import websockets.server as ws
 
@@ -20,3 +19,5 @@ class ClientSession:
         self.user_id = user_id
         self.hostname = conn.remote_address[0]
         self.port = conn.remote_address[1]
+        # self.log = logging.getLogger("logger")
+        # self.log.info(f"Client Session created for {user_id}")

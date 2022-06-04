@@ -16,6 +16,9 @@ class MsgId(IntEnum):
     NO_TYPE = auto()
     USER_LOGIN = auto()
     SET_USER_ID = auto()
+    ZKP_FOR_PUB_KEY = auto()
+    ACCEPTANCE = auto()
+    SEND_QUESTION = auto()
 
 
 class AbstractMessage:
@@ -38,19 +41,51 @@ class AbstractMessage:
 class UserLogin(AbstractMessage):
     """User login message."""
 
-    def __init__(self) -> None:
-        """Create a user login message to server."""
+    def __init__(self, public_key: str) -> None:
+        """Create a user login message to server with public key."""
         super().__init__()
         self.header.msg_id = MsgId.USER_LOGIN
+        self.payload = {"public_key": public_key}
 
 
 class SetUserId(AbstractMessage):
     """User set id message."""
 
-    def __init__(self, user_id) -> None:
+    def __init__(self, user_id: int) -> None:
+        """Create a server set id message to client."""
         super().__init__()
         self.header.msg_id = MsgId.SET_USER_ID
         self.payload = {"user_id": user_id}
+
+
+class ZKPForPubKey(AbstractMessage):
+    """Send ZKP for public key message."""
+
+    def __init__(self, proof: str) -> None:
+        """Create a client ZKP message to server."""
+        super().__init__()
+        self.header.msg_id = MsgId.ZKP_FOR_PUB_KEY
+        self.payload = {"proof": proof}
+
+
+class Acceptance(AbstractMessage):
+    """Send acceptance state of ZKP for public key."""
+
+    def __init__(self, acceptance: bool) -> None:
+        """Create a server acceptance message to client."""
+        super().__init__()
+        self.header.msg_id = MsgId.ACCEPTANCE
+        self.payload = {"acceptance": acceptance}
+
+
+class SendQuestion(AbstractMessage):
+    """Send Question to User message."""
+
+    def __init__(self, the_question: str) -> None:
+        """Create a server send question message to client."""
+        super().__init__()
+        self.header.msg_id = MsgId.SEND_QUESTION
+        self.payload = {"the_question": the_question}
 
 
 class AbstractMessageException(Exception):

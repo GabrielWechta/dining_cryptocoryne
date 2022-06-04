@@ -10,7 +10,7 @@ import ssl
 
 import websockets.server as ws
 
-from common.messages_types import msg_recv
+from common.messages_types import Acceptance, SetUserId, msg_recv, msg_send
 
 from .session_manager_server import SessionsManager
 
@@ -35,6 +35,7 @@ class ConnectionListener:
         self.session_manager = SessionsManager()
         self.log = logging.getLogger("logger")
         self.log.info("Server connection listener is alive")
+        self.logged_users_num = 0
 
     async def run(self) -> None:
         """Open a public port and listen for connections."""
@@ -69,20 +70,40 @@ class ConnectionListener:
 
         # log in the User
         try:
-            message = await msg_recv(conn)
+            user_login_message = await msg_recv(conn)
+            public_key = user_login_message.payload["public_key"]
 
-            await self.session_manager.login_user_entry(
+            user_id = self.logged_users_num
+            self.logged_users_num += 1
+
+            set_user_id_message = SetUserId(user_id=user_id)
+            await msg_send(set_user_id_message, conn)
+            self.log.info(f"Server sent {user_id=} to client.")
+
+            zkp_for_pubkey_message = await msg_recv(conn)
+            proof = zkp_for_pubkey_message.payload["proof"]
+            self.log.info(
+                f"Server received {proof=} "
+                f"for public key from client {user_id}."
+            )
+
+            # TODO check if proof is ok
+            acceptance = True
+            acceptance_message = Acceptance(acceptance=acceptance)
+            await msg_send(acceptance_message, conn)
+            self.log.info(f"Server sent {acceptance=} to client {user_id}.")
+
+            await self.session_manager.add_session_with_user(
                 conn=conn,
-                user_id=user_id,
-                subscriptions=subscriptions,
-                identity_key=identity_key,
-                one_time_keys=one_time_keys,
+                user_id=str(user_id),
+                public_key=public_key,
+                proof=proof,
             )
 
             self.log.info(
-                f"Successfully login user at {conn.remote_address[0]}:"
-                + f"{conn.remote_address[1]} with public key {message}"
-                + f" (digest: {message})"
+                f"Successfully logged in user {user_id}"
+                f" at {conn.remote_address[0]}:"
+                + f"{conn.remote_address[1]}.)"
             )
 
         except ServerAuthFailed:

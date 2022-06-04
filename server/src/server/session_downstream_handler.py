@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict
 
-from common.messages_types import UserLogin, msg_send
+from common.messages_types import SendQuestion, msg_send
 from server.client_session import ClientSession
 
 from .session_event import EventType, SessionEvent
@@ -26,7 +26,7 @@ class SessionDownstreamHandler:
         self.sessions = sessions
         # Set up event handlers
         self.event_handlers = {
-            EventType.LOGIN: self.__handle_event_login,
+            EventType.SEND_QUESTION: self.__handle_event_send_question,
         }
 
     async def handle_downstream(self, session: ClientSession) -> None:
@@ -40,30 +40,30 @@ class SessionDownstreamHandler:
             if event.event_type in self.event_handlers.keys():
                 # Call a registered event handler
                 # await self.event_handlers[event.event_type](event, session)
-                await self.event_handlers[event.event_type](session)
+                await self.event_handlers[event.event_type](event, session)
             else:
                 self.log.warning(f"Unsupported event type: {event.event_type}")
 
-    async def send_event(self, event: SessionEvent, client: str) -> None:
+    async def send_event(self, event: SessionEvent, user_id: str) -> None:
         """Send an event.
 
         The event shall be handled in the relevant session's
         downstream handler.
         """
-        session = self.sessions[client]
+        session = self.sessions[user_id]
         await session.event_queue.put(event)
 
-    async def __handle_event_login(
+    async def __get_event(self, session: ClientSession) -> SessionEvent:
+        """Receive an event from the session's event queue."""
+        return await session.event_queue.get()
+
+    async def __handle_event_send_question(
         self, event: SessionEvent, session: ClientSession
     ) -> None:
         """Handle session event of type LOGIN."""
         assert isinstance(event.payload, dict)
         payload: Dict[str, Any] = event.payload
-        peer = payload["peer"]
-        message = UserLogin(user_id="42")
 
+        # Wrap the event in a CANS message and send downstream to the client
+        message = SendQuestion(the_question=payload["the_question"])
         await msg_send(message, session.connection)
-
-    async def __get_event(self, session: ClientSession) -> SessionEvent:
-        """Receive an event from the session's event queue."""
-        return await session.event_queue.get()
