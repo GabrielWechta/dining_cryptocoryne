@@ -10,7 +10,12 @@ import ssl
 
 import websockets.server as ws
 
-from common.messages_types import Acceptance, SetUserId, msg_recv, msg_send
+from common.messages_types import (
+    SetUserIdMessage,
+    ZKPForPubKeyAccMessage,
+    msg_recv,
+    msg_send,
+)
 
 from .session_manager_server import SessionsManager
 
@@ -76,7 +81,7 @@ class ConnectionListener:
             user_id = self.logged_users_num
             self.logged_users_num += 1
 
-            set_user_id_message = SetUserId(user_id=user_id)
+            set_user_id_message = SetUserIdMessage(user_id=user_id)
             await msg_send(set_user_id_message, conn)
             self.log.info(f"Server sent {user_id=} to client.")
 
@@ -89,7 +94,7 @@ class ConnectionListener:
 
             # TODO check if proof is ok
             acceptance = True
-            acceptance_message = Acceptance(acceptance=acceptance)
+            acceptance_message = ZKPForPubKeyAccMessage(acceptance=acceptance)
             await msg_send(acceptance_message, conn)
             self.log.info(f"Server sent {acceptance=} to client {user_id}.")
 

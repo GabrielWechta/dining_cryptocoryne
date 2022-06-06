@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict
 
-from common.messages_types import SendQuestion, msg_send
+from common.messages_types import SendQuestionMessage, msg_send
 from server.client_session import ClientSession
 
 from .session_event import EventType, SessionEvent
@@ -65,5 +65,5 @@ class SessionDownstreamHandler:
         payload: Dict[str, Any] = event.payload
 
         # Wrap the event in a CANS message and send downstream to the client
-        message = SendQuestion(the_question=payload["the_question"])
+        message = SendQuestionMessage(the_question=payload["the_question"])
         await msg_send(message, session.connection)

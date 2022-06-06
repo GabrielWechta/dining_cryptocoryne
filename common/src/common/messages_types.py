@@ -1,7 +1,7 @@
 """Define message formats."""
 from enum import IntEnum, auto, unique
 from json import JSONDecodeError, JSONDecoder, JSONEncoder
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from websockets.client import WebSocketClientProtocol
 from websockets.server import WebSocketServerProtocol
@@ -17,8 +17,11 @@ class MsgId(IntEnum):
     USER_LOGIN = auto()
     SET_USER_ID = auto()
     ZKP_FOR_PUB_KEY = auto()
-    ACCEPTANCE = auto()
+    ZKP_FOR_PUB_KEY_ACC = auto()
     SEND_QUESTION = auto()
+    MASKED_BALLOT = auto()
+    ZKP_FOR_BALLOT_ACC = auto()
+    FINAL_TALLY = auto()
 
 
 class AbstractMessage:
@@ -38,7 +41,7 @@ class AbstractMessage:
             self.msg_id: MsgId = MsgId.NO_TYPE
 
 
-class UserLogin(AbstractMessage):
+class UserLoginMessage(AbstractMessage):
     """User login message."""
 
     def __init__(self, public_key: str) -> None:
@@ -48,7 +51,7 @@ class UserLogin(AbstractMessage):
         self.payload = {"public_key": public_key}
 
 
-class SetUserId(AbstractMessage):
+class SetUserIdMessage(AbstractMessage):
     """User set id message."""
 
     def __init__(self, user_id: int) -> None:
@@ -58,7 +61,7 @@ class SetUserId(AbstractMessage):
         self.payload = {"user_id": user_id}
 
 
-class ZKPForPubKey(AbstractMessage):
+class ZKPForPubKeyMessage(AbstractMessage):
     """Send ZKP for public key message."""
 
     def __init__(self, proof: str) -> None:
@@ -68,17 +71,17 @@ class ZKPForPubKey(AbstractMessage):
         self.payload = {"proof": proof}
 
 
-class Acceptance(AbstractMessage):
+class ZKPForPubKeyAccMessage(AbstractMessage):
     """Send acceptance state of ZKP for public key."""
 
     def __init__(self, acceptance: bool) -> None:
         """Create a server acceptance message to client."""
         super().__init__()
-        self.header.msg_id = MsgId.ACCEPTANCE
+        self.header.msg_id = MsgId.ZKP_FOR_PUB_KEY_ACC
         self.payload = {"acceptance": acceptance}
 
 
-class SendQuestion(AbstractMessage):
+class SendQuestionMessage(AbstractMessage):
     """Send Question to User message."""
 
     def __init__(self, the_question: str) -> None:
@@ -88,16 +91,37 @@ class SendQuestion(AbstractMessage):
         self.payload = {"the_question": the_question}
 
 
-class AbstractMessageException(Exception):
-    """Abstract exception type."""
+class MaskedBallotMessage(AbstractMessage):
+    """Send masked vote to the server message."""
 
-    pass
+    def __init__(self, masked_ballot: str, masked_ballot_proof: str) -> None:
+        """Create a client masked vote message to server."""
+        super().__init__()
+        self.header.msg_id = MsgId.MASKED_BALLOT
+        self.payload = {
+            "masked_vote": masked_ballot,
+            "masked_vote_proof": masked_ballot_proof,
+        }
 
 
-class DeserializationError(AbstractMessageException):
-    """Error thrown on deserialization failure."""
+class ZKPForBallotAccMessage(AbstractMessage):
+    """Send acceptance state of ZKP for ballot."""
 
-    pass
+    def __init__(self, acceptance: bool) -> None:
+        """Create a server acceptance message to client."""
+        super().__init__()
+        self.header.msg_id = MsgId.ZKP_FOR_BALLOT_ACC
+        self.payload = {"acceptance": acceptance}
+
+
+class FinalTallyMessage(AbstractMessage):
+    """Send final tally values message."""
+
+    def __init__(self, tally: List[str]) -> None:
+        """Create a server final tally message to client."""
+        super().__init__()
+        self.header.msg_id = MsgId.FINAL_TALLY
+        self.payload = {"tally": tally}
 
 
 async def msg_recv(
@@ -169,3 +193,15 @@ def __validate_format(pretender: dict) -> None:
     except Exception as e:
         # Translate any exception to a deserialization error
         raise DeserializationError(f"Unknown error: {e.args}")
+
+
+class AbstractMessageException(Exception):
+    """Abstract exception type."""
+
+    pass
+
+
+class DeserializationError(AbstractMessageException):
+    """Error thrown on deserialization failure."""
+
+    pass
