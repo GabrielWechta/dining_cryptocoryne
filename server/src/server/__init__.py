@@ -1,4 +1,4 @@
-"""Server application"""
+"""Server application."""
 
 import asyncio
 import logging
@@ -13,7 +13,6 @@ class Server:
 
     def __init__(self) -> None:
         """Construct the server object."""
-
         self._setup_logger()
         self.log = logging.getLogger("logger")
         self.log.info("Server is alive.")
@@ -39,7 +38,7 @@ class Server:
 
     @staticmethod
     def _setup_logger() -> None:
-        """Setup logger."""
+        """Initialize setup for logger."""
         logger = logging.getLogger("logger")
 
         # Prepare the formatter

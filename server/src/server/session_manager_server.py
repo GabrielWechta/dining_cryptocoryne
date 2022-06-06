@@ -2,7 +2,9 @@
 
 import asyncio
 import logging
-from typing import Callable, Dict
+import os
+from asyncio import Event
+from typing import Any, Dict
 
 from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
@@ -11,6 +13,7 @@ from server.session_downstream_handler import SessionDownstreamHandler
 from server.session_upstream_handler import SessionUpstreamHandler
 
 from .client_session import ClientSession
+from .session_event import SendQuestionEvent
 
 
 class SessionsManager:
@@ -26,20 +29,25 @@ class SessionsManager:
         # Get the logger
         self.log = logging.getLogger("logger")
         self.sessions: Dict[str, ClientSession] = {}
+        self.transcripts: Dict[str, Dict[str, Any]] = {}
+        self.participants_number = int(os.environ["PARTICIPANTS_NUMBER"])
+        self.the_question = os.environ["THE_QUESTION"]
         # Instantiate the traffic handlers
         self.downstream_handler = SessionDownstreamHandler(
-            self.sessions,
+            sessions=self.sessions,
         )
         self.upstream_handler = SessionUpstreamHandler(
             sessions=self.sessions,
         )
 
-    async def authed_user_entry(
+    async def add_session_with_user(
         self,
         conn: WebSocketServerProtocol,
         user_id: str,
+        public_key: str,
+        proof: str,
     ) -> None:
-        """Handle an authenticated user."""
+        """Handle a logged-in user."""
         # Save the session to have consistent state when
         # sending notifications and talking to the client
         session = ClientSession(
@@ -48,7 +56,10 @@ class SessionsManager:
         )
         self.sessions[user_id] = session
 
-        # TODO behaviour
+        self.transcripts[user_id] = {"public_key": public_key, "proof": proof}
+
+        await self.__wait_for_everybody_next_send_question()
+
         try:
             # Use fork-join semantics to run both upstream and
             # downstream handlers concurrently and wait for both
@@ -59,6 +70,26 @@ class SessionsManager:
             )
         except ConnectionClosed as e:
             await self.__handle_connection_closed(user_id, e)
+
+    async def __check_sessions_count(self, flag: Event) -> None:
+        while True:
+            await asyncio.sleep(0.1)
+            if len(self.sessions) >= self.participants_number:
+                flag.set()
+
+    async def __wait_for_everybody_next_send_question(self) -> None:
+        flag = asyncio.Event()
+        asyncio.create_task(self.__check_sessions_count(flag))
+        await flag.wait()
+        self.log.info("Everybody logged in.")
+
+        send_question_event = SendQuestionEvent(
+            payload={"the_question": self.the_question}
+        )
+        for user_id in self.sessions.keys():
+            await self.downstream_handler.send_event(
+                send_question_event, user_id
+            )
 
     async def __handle_connection_closed(
         self, user_id: str, exception: ConnectionClosed

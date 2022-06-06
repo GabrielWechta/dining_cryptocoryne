@@ -1,10 +1,9 @@
-"""Client application"""
+"""Client application."""
 
 import asyncio
 import logging
 import logging.handlers
 import os
-import random
 
 from common.messages_types import AbstractMessage
 
@@ -12,6 +11,12 @@ from .websocket_interface import WebsocketInterface
 
 
 class Client:
+    """Client application class.
+
+    Class for every participant in the voting. Firstly automatically connects
+    to server, after that does handshake and waits for input.
+    """
+
     def __init__(self) -> None:
         """Construct the client object."""
         self._setup_logger()
@@ -25,8 +30,7 @@ class Client:
 
         self.event_loop = asyncio.get_event_loop()
 
-        self.user_id = hash(random.randint(0, 100_000_000))
-        self.websocket_interface = WebsocketInterface(user_id=self.user_id)
+        self.websocket_interface = WebsocketInterface()
 
     def run(self) -> None:
         """Run client."""
@@ -44,7 +48,7 @@ class Client:
 
     @staticmethod
     def _setup_logger() -> None:
-        """Setup logger."""
+        """Initialize setup for logger."""
         logger = logging.getLogger("logger")
 
         # Prepare the formatter
@@ -70,11 +74,12 @@ class Client:
             message = await self.websocket_interface.receive_message()
 
             self.log.debug(
-                f"Received message from {message.header.sender}, payload {message.payload}"
+                f"Received message from {message.header.sender},"
+                f" payload {message.payload}"
             )
 
     async def _handle_upstream_message(self, message: AbstractMessage) -> None:
         """Handle an upstream message."""
-        self.log.debug(f"Sending message of type {message.msg_id}")
+        self.log.debug(f"Sending message of type {message}")
 
         await self.websocket_interface.send_message(message)
