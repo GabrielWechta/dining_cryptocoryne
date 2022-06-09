@@ -11,6 +11,7 @@ import ssl
 import websockets.server as ws
 
 from common.messages_types import Acceptance, SetUserId, msg_recv, msg_send
+from .crypto import Crypto
 
 from .session_manager_server import SessionsManager
 
@@ -81,14 +82,14 @@ class ConnectionListener:
             self.log.info(f"Server sent {user_id=} to client.")
 
             zkp_for_pubkey_message = await msg_recv(conn)
-            proof = zkp_for_pubkey_message.payload["proof"]
+            signature = zkp_for_pubkey_message.payload["signature"]
+            exponent = zkp_for_pubkey_message.payload["exponent"]
             self.log.info(
-                f"Server received {proof=} "
+                f"Server received {signature=} {exponent=} "
                 f"for public key from client {user_id}."
             )
 
-            # TODO check if proof is ok
-            acceptance = True
+            acceptance = Crypto.verify_schnorr_signature(user_id, signature, exponent, public_key)
             acceptance_message = Acceptance(acceptance=acceptance)
             await msg_send(acceptance_message, conn)
             self.log.info(f"Server sent {acceptance=} to client {user_id}.")
@@ -97,7 +98,7 @@ class ConnectionListener:
                 conn=conn,
                 user_id=str(user_id),
                 public_key=public_key,
-                proof=proof,
+                proof=(signature, exponent),
             )
 
             self.log.info(

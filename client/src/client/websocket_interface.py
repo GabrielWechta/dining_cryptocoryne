@@ -7,6 +7,7 @@ import time
 
 import websockets.client as ws
 
+from .crypto import Crypto
 from common.messages_types import (
     AbstractMessage,
     AbstractMessageException,
@@ -31,6 +32,7 @@ class WebsocketInterface:
         self.always_vote = None
 
         self.user_id = None
+        self.crypto = Crypto()
         self.message_handlers = {
             MsgId.SEND_QUESTION: self._handle_message_send_question,
         }
@@ -50,8 +52,7 @@ class WebsocketInterface:
                 "Successfully connected to the server. Running login..."
             )
 
-            # TODO change public key to real public key
-            public_key = str(hash(time.time()))
+            public_key = self.crypto.get_public_key()
             await msg_send(UserLogin(public_key=public_key), conn)
             self.log.info(f"Send login - {public_key=}.")
 
@@ -60,10 +61,9 @@ class WebsocketInterface:
             self.user_id = user_id
             self.log.info(f"I got {user_id=}.")
 
-            # TODO change proof to real proof
-            proof = 42
-            await msg_send(ZKPForPubKey(proof=proof), conn)
-            self.log.info(f"Client {user_id} sends pub key proof - {proof=}.")
+            signature, exponent = self.crypto.get_schnorr_signature(self.user_id)
+            await msg_send(ZKPForPubKey(signature=signature, exponent=exponent), conn)
+            self.log.info(f"Client {user_id} sends pub key proof - {signature=} {exponent=}.")
 
             recv_acceptance_message = await msg_recv(conn)
             acceptance = recv_acceptance_message.payload["acceptance"]

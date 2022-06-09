@@ -61,11 +61,11 @@ class SetUserId(AbstractMessage):
 class ZKPForPubKey(AbstractMessage):
     """Send ZKP for public key message."""
 
-    def __init__(self, proof: str) -> None:
+    def __init__(self, signature: str, exponent: int) -> None:
         """Create a client ZKP message to server."""
         super().__init__()
         self.header.msg_id = MsgId.ZKP_FOR_PUB_KEY
-        self.payload = {"proof": proof}
+        self.payload = {"signature": signature, "exponent": exponent}
 
 
 class Acceptance(AbstractMessage):

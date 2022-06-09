@@ -45,7 +45,7 @@ class SessionsManager:
         conn: WebSocketServerProtocol,
         user_id: str,
         public_key: str,
-        proof: str,
+        proof: tuple,
     ) -> None:
         """Handle a logged-in user."""
         # Save the session to have consistent state when
