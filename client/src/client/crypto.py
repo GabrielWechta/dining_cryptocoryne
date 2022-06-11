@@ -1,21 +1,25 @@
-from __future__ import annotations
-from Cryptodome.PublicKey import ECC
-from common import CURVE_NAME
+import random
+from typing import Tuple
+
+from common import CURVE_ORD, CURVE_G
+from Cryptodome.Hash import SHA3_256
 
 
 class Crypto:
     def __init__(self):
-        self.secret = ECC.generate(curve=CURVE_NAME)
+        self.secret = random.randrange(1, CURVE_ORD)
 
-    def get_public_key(self) -> str:
+    def get_public_key(self) -> Tuple[int, int]:
         """Get public key, i.e. g^x, where g is the generator and x is the client's secret."""
-        return self.secret.public_key().export_key(format="OpenSSH")
+        pub_key = CURVE_G * self.secret
+        return int(pub_key.x), int(pub_key.y)
 
-    def get_schnorr_signature(self, client_id) -> tuple[str, int]:
+    def get_schnorr_signature(self, client_id) -> Tuple[Tuple[int, int], int]:
         """Prepare a Schnorr signature that serves as a ZKP for knowing the secret."""
-        # publicznie wysylamy A = g^sekret
-        # chcemy wyslac X = g^rand i s = rand - sekret * hash(i)
-        # wtedy serwer sprawdza czy g^rand = g^s * A^hash(i)
-        r = ECC.generate(curve=CURVE_NAME)
-        s = r.d - self.secret.d * hash(client_id)
-        return r.public_key().export_key(format="OpenSSH"), int(s)
+        k = random.randrange(1, CURVE_ORD)
+        r = CURVE_G * k
+        h = SHA3_256.new()
+        h.update(bytes(client_id))
+        e = int(h.hexdigest(), base=16) % CURVE_ORD
+        s = (k - self.secret * e) % CURVE_ORD
+        return (int(r.x), int(r.y)), s

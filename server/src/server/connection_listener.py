@@ -72,7 +72,7 @@ class ConnectionListener:
         # log in the User
         try:
             user_login_message = await msg_recv(conn)
-            public_key = user_login_message.payload["public_key"]
+            commitment = user_login_message.payload["commitment"]
 
             user_id = self.logged_users_num
             self.logged_users_num += 1
@@ -89,7 +89,7 @@ class ConnectionListener:
                 f"for public key from client {user_id}."
             )
 
-            acceptance = Crypto.verify_schnorr_signature(user_id, signature, exponent, public_key)
+            acceptance = Crypto.verify_schnorr_signature(user_id, signature, exponent, commitment)
             acceptance_message = Acceptance(acceptance=acceptance)
             await msg_send(acceptance_message, conn)
             self.log.info(f"Server sent {acceptance=} to client {user_id}.")
@@ -97,7 +97,7 @@ class ConnectionListener:
             await self.session_manager.add_session_with_user(
                 conn=conn,
                 user_id=str(user_id),
-                public_key=public_key,
+                public_key=commitment,
                 proof=(signature, exponent),
             )
 

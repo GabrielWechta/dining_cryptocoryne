@@ -1,7 +1,7 @@
 """Define message formats."""
 from enum import IntEnum, auto, unique
 from json import JSONDecodeError, JSONDecoder, JSONEncoder
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Tuple
 
 from websockets.client import WebSocketClientProtocol
 from websockets.server import WebSocketServerProtocol
@@ -41,7 +41,7 @@ class AbstractMessage:
 class UserLogin(AbstractMessage):
     """User login message."""
 
-    def __init__(self, public_key: str) -> None:
+    def __init__(self, public_key) -> None:
         """Create a user login message to server with public key."""
         super().__init__()
         self.header.msg_id = MsgId.USER_LOGIN
@@ -61,7 +61,7 @@ class SetUserId(AbstractMessage):
 class ZKPForPubKey(AbstractMessage):
     """Send ZKP for public key message."""
 
-    def __init__(self, signature: str, exponent: int) -> None:
+    def __init__(self, signature: Tuple[int, int], exponent: int) -> None:
         """Create a client ZKP message to server."""
         super().__init__()
         self.header.msg_id = MsgId.ZKP_FOR_PUB_KEY
