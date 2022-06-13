@@ -45,7 +45,7 @@ class SessionsManager:
         conn: WebSocketServerProtocol,
         user_id: str,
         public_key: str,
-        proof: str,
+        public_key_proof: str,
     ) -> None:
         """Handle a logged-in user."""
         # Save the session to have consistent state when
@@ -53,10 +53,10 @@ class SessionsManager:
         session = ClientSession(
             conn=conn,
             user_id=user_id,
+            public_key=public_key,
+            public_key_proof=public_key_proof,
         )
         self.sessions[user_id] = session
-
-        self.transcripts[user_id] = {"public_key": public_key, "proof": proof}
 
         await self.__wait_for_everybody_next_send_question()
 

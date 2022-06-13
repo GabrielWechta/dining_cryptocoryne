@@ -60,7 +60,13 @@ class SessionUpstreamHandler:
     async def __check_ballot_count(self, flag: Event) -> None:
         while True:
             await asyncio.sleep(0.1)
-            if len(self.sessions) >= self.participants_number:
+            ballot_count = sum(
+                [
+                    1 if session.masked_ballot is not None else 0
+                    for session in self.sessions.values()
+                ]
+            )
+            if ballot_count >= self.participants_number:
                 flag.set()
 
     async def __wait_for_everybody_vote_next_send_final_tally(
@@ -89,6 +95,10 @@ class SessionUpstreamHandler:
     ) -> None:
         masked_ballot = message.payload["masked_ballot"]
         masked_ballot_proof = message.payload["masked_ballot_proof"]
+        self.sessions[session.user_id].masked_ballot = masked_ballot
+        self.sessions[
+            session.user_id
+        ].masked_ballot_proof = masked_ballot_proof
         self.log.info(
             f"Server got {masked_ballot=}, with {masked_ballot_proof=} "
             f"from Client {session.user_id}."
