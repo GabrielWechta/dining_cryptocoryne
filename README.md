@@ -8,8 +8,11 @@ by Hao, F., Zieliński, P. (2009).
 
 ### Protocol overview:
 
-<object data="securocracy_protocol.pdf" type="application/pdf" width="100%">
-</object>
+<p align="center">
+  <img width="460" src="_papers/page_0001.png">
+  <img width="460" src="_papers/page_0002.png">
+  <img width="460" src="_papers/page_0003.png">
+</p>
 
 Also a melancholy, get-back-together story.
 
