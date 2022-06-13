@@ -10,7 +10,12 @@ import ssl
 
 import websockets.server as ws
 
-from common.messages_types import Acceptance, SetUserId, msg_recv, msg_send
+from common.messages_types import (
+    SetUserIdMessage,
+    ZKPForPubKeyAccMessage,
+    msg_recv,
+    msg_send,
+)
 
 from .session_manager_server import SessionsManager
 
@@ -72,44 +77,43 @@ class ConnectionListener:
         try:
             user_login_message = await msg_recv(conn)
             public_key = user_login_message.payload["public_key"]
-
+            self.log.info(
+                f"Server received message from Client with {public_key=}."
+            )
             user_id = self.logged_users_num
             self.logged_users_num += 1
 
-            set_user_id_message = SetUserId(user_id=user_id)
+            set_user_id_message = SetUserIdMessage(user_id=user_id)
             await msg_send(set_user_id_message, conn)
-            self.log.info(f"Server sent {user_id=} to client.")
+            self.log.info(f"Server sent {user_id=} to Client.")
 
             zkp_for_pubkey_message = await msg_recv(conn)
             proof = zkp_for_pubkey_message.payload["proof"]
             self.log.info(
                 f"Server received {proof=} "
-                f"for public key from client {user_id}."
+                f"for public key from Client {user_id}."
             )
 
             # TODO check if proof is ok
             acceptance = True
-            acceptance_message = Acceptance(acceptance=acceptance)
+            acceptance_message = ZKPForPubKeyAccMessage(acceptance=acceptance)
             await msg_send(acceptance_message, conn)
-            self.log.info(f"Server sent {acceptance=} to client {user_id}.")
-
+            self.log.info(
+                f"Server sent {acceptance=} for ZKP for public key "
+                f"to Client {user_id}."
+            )
+            self.log.info(f"Successfully logged in Client {user_id}.")
             await self.session_manager.add_session_with_user(
                 conn=conn,
                 user_id=str(user_id),
                 public_key=public_key,
-                proof=proof,
-            )
-
-            self.log.info(
-                f"Successfully logged in user {user_id}"
-                f" at {conn.remote_address[0]}:"
-                + f"{conn.remote_address[1]}.)"
+                public_key_proof=proof,
             )
 
         except ServerAuthFailed:
             self.log.error(
-                f"User authentication failed: {conn.remote_address[0]}:"
-                + f"{conn.remote_address[1]}"
+                f"User authentication failed: "
+                f"{conn.remote_address[0]}:{conn.remote_address[1]}"
             )
             # Terminate the connection with application error code
             await conn.close(code=3000, reason="Authentication failed")

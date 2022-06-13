@@ -13,29 +13,38 @@ from .websocket_interface import WebsocketInterface
 class Client:
     """Client application class.
 
-    Class for every participant in the voting. Firstly automatically connects
-    to server, after that does handshake and waits for input.
+    Class for every participant in the voting. Does:
+    1. Handshake with the server (simultaneously sends pub_key)
+    2. Does ZKP for pub_key
+    3. Wait for input 'yes'/'no'
+    4. Sends masked vote.
+    5. Does ZKP for vote.
+    After both rounds are finished, client closes.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, always_vote: str = None) -> None:
         """Construct the client object."""
         self._setup_logger()
         self.log = logging.getLogger("logger")
         self.log.info("Client is alive.")
-        print("CLIENT IS ALIVE")
+        print("!!!CLIENT IS ALIVE!!!")
 
+        # Parsing env variables
         self.server_hostname = os.environ["SERVER_HOSTNAME"]
         self.server_port = os.environ["PORT"]
         self.certpath = os.environ["SELF_SIGNED_CERT_PATH"]
 
         self.event_loop = asyncio.get_event_loop()
 
-        self.websocket_interface = WebsocketInterface()
+        self.websocket_interface = WebsocketInterface(always_vote=always_vote)
 
     def run(self) -> None:
         """Run client."""
-        self.log.info(f"wss://{self.server_hostname}:{self.server_port}")
-        # Connect to the server
+        self.log.info(
+            f"Client connects to "
+            f"wss://{self.server_hostname}:{self.server_port}"
+        )
+        # Connect to the server and handle incoming (downstream) messages
         self.event_loop.run_until_complete(
             asyncio.gather(  # noqa: FKA01
                 self.websocket_interface.connect(
@@ -65,8 +74,7 @@ class Client:
         handler.setFormatter(formatter)
         # ...and the handler with the logger
         logger.addHandler(handler)
-
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
 
     async def _handle_downstream_message(self) -> None:
         """Handle downstream user messages."""
@@ -74,12 +82,14 @@ class Client:
             message = await self.websocket_interface.receive_message()
 
             self.log.debug(
-                f"Received message from {message.header.sender},"
-                f" payload {message.payload}"
+                f"Received message from server, payload {message.payload}"
             )
 
     async def _handle_upstream_message(self, message: AbstractMessage) -> None:
         """Handle an upstream message."""
-        self.log.debug(f"Sending message of type {message}")
+        self.log.debug(
+            f"Sending message of type {message.header.msg_id} "
+            f"with payload {message.payload}"
+        )
 
         await self.websocket_interface.send_message(message)
