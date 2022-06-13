@@ -6,12 +6,12 @@ Original paper (very good):
 [_"A 2-Round Anonymous Veto Protocol"_](https://link.springer.com/chapter/10.1007/978-3-642-04904-0_28#citeas)
 by Hao, F., Zieliński, P. (2009).
 
-### Protocol overview:
+### Protocol overview with some extra assumptions:
 
 <p align="center">
-  <img width="460" src="_papers/page_0001.png">
-  <img width="460" src="_papers/page_0002.png">
-  <img width="460" src="_papers/page_0003.png">
+  <img width="660" src="_papers/page_0001.png">
+  <img width="660" src="_papers/page_0002.png">
+  <img width="660" src="_papers/page_0003.png">
 </p>
 
 Also a melancholy, get-back-together story.
