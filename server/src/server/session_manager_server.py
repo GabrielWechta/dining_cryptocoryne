@@ -78,15 +78,18 @@ class SessionsManager:
                 flag.set()
 
     async def __wait_for_everybody_next_send_question(self) -> None:
+        self.log.info(
+            "Server waits for everybody before sending the question."
+        )
         flag = asyncio.Event()
         asyncio.create_task(self.__check_sessions_count(flag))
         await flag.wait()
-        self.log.info("Everybody logged in.")
 
         send_question_event = SendQuestionEvent(
             payload={"the_question": self.the_question}
         )
         for user_id in self.sessions.keys():
+            self.log.info(f"Servers sends question to {user_id}.")
             await self.downstream_handler.send_event(
                 send_question_event, user_id
             )

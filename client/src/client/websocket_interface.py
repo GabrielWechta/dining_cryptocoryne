@@ -41,7 +41,6 @@ class WebsocketInterface:
         self.user_id = None  # this will be set up by a message from the server
         self.message_handlers = {
             MsgId.SEND_QUESTION: self._steer_message_send_question,
-            MsgId.SET_USER_ID: self._steer_message_set_user_id,
             MsgId.FINAL_TALLY: self._steer_message_final_tally,
         }
         self.upstream_message_queue: asyncio.Queue = asyncio.Queue()
@@ -65,6 +64,20 @@ class WebsocketInterface:
             public_key = str(hash(time.time()))
             await msg_send(UserLoginMessage(public_key=public_key), conn)
             self.log.info(f"Client sends login message - {public_key=}.")
+
+            recv_set_user_id_message = await msg_recv(conn)
+            user_id = recv_set_user_id_message.payload["user_id"]
+            self.user_id = user_id
+            self.log.info(f"Client got {user_id=}.")
+
+            # TODO change proof to real proof, I assumed that proof is of type
+            #  str, but for me it can be even of type rainbow-star, change in.
+            # C ---> S
+            proof = "42"
+            self.log.info(
+                f"Client {self.user_id} sends ZKP for pub key - {proof=}."
+            )
+            await msg_send(ZKPForPubKeyMessage(proof=proof), conn)
 
             # C <--- S
             recv_acceptance_message = await msg_recv(conn)
@@ -131,30 +144,13 @@ class WebsocketInterface:
             print(f"Your client application provided bad {zkp_type}.")
             raise RejectZKPException(f"{zkp_type} rejected.")
 
-    async def _steer_message_set_user_id(
-        self, message: AbstractMessage, conn: ws.WebSocketClientProtocol
-    ) -> None:
-        """Steer message of type SET_USER_ID."""
-        user_id = message.payload["user_id"]
-        self.user_id = user_id
-        self.log.info(f"Client got {user_id=}.")
-
-        # TODO change proof to real proof, I assumed that proof is of type
-        #  str, but for me it can be even of type rainbow-star, change in.
-        # C ---> S
-        proof = "42"
-        self.log.info(
-            f"Client {self.user_id} sends ZKP for pub key - {proof=}."
-        )
-        await msg_send(ZKPForPubKeyMessage(proof=proof), conn)
-
     async def _steer_message_send_question(
         self, message: AbstractMessage, conn: ws.WebSocketClientProtocol
     ) -> None:
         """Steer message of type SEND_QUESTION."""
         the_question = message.payload["the_question"]
         self.log.info(
-            f"Client {self.user_id} got this question {the_question}."
+            f"Client {self.user_id} got this question: {the_question}."
         )
         print(the_question)  # printing the question to the User
         vote_str = None
@@ -198,13 +194,13 @@ class WebsocketInterface:
         self, message: AbstractMessage, conn: ws.WebSocketClientProtocol
     ) -> None:
         """Steer message of type FINAL_TALLY."""
-        tally = message.payload["tally"]
-        self.log.info(f"Client {self.user_id} got {tally=}.")
+        final_tally = message.payload["final_tally"]
+        self.log.info(f"Client {self.user_id} got {final_tally=}.")
 
         # TODO Compute here voting result
         result_votes = 1
         print(
             "Voting finished with:\n"
             f"{result_votes} - 'yes' votes\n"
-            f"{self.participants_number - result_votes} - 'yes' votes\n"
+            f"{self.participants_number - result_votes} - 'no' votes\n"
         )

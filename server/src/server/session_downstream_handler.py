@@ -3,7 +3,12 @@
 import logging
 from typing import Any, Dict
 
-from common.messages_types import SendQuestionMessage, msg_send
+from common.messages_types import (
+    FinalTallyMessage,
+    SendQuestionMessage,
+    ZKPForBallotAccMessage,
+    msg_send,
+)
 from server.client_session import ClientSession
 
 from .session_event import EventType, SessionEvent
@@ -27,6 +32,11 @@ class SessionDownstreamHandler:
         # Set up event handlers
         self.event_handlers = {
             EventType.SEND_QUESTION: self.__handle_event_send_question,
+            # fmt: off
+            EventType.ZKP_FOR_BALLOT_ACC:
+                self.__handle_event_zkp_for_ballot_acc,
+            # fmt: on
+            EventType.SEND_FINAL_TALLY: self.__handle_event_send_final_tally,
         }
 
     async def handle_downstream(self, session: ClientSession) -> None:
@@ -60,10 +70,45 @@ class SessionDownstreamHandler:
     async def __handle_event_send_question(
         self, event: SessionEvent, session: ClientSession
     ) -> None:
-        """Handle session event of type LOGIN."""
+        """Handle session event of type SEND_QUESTION."""
         assert isinstance(event.payload, dict)
         payload: Dict[str, Any] = event.payload
+        the_question = payload["the_question"]
 
-        # Wrap the event in a CANS message and send downstream to the client
-        message = SendQuestionMessage(the_question=payload["the_question"])
+        # Wrap the event in a AbstractMessage and send downstream to the client
+        message = SendQuestionMessage(the_question=the_question)
         await msg_send(message, session.connection)
+        self.log.info(
+            f"Server sent {the_question=} to Client {session.user_id}."
+        )
+
+    async def __handle_event_zkp_for_ballot_acc(
+        self, event: SessionEvent, session: ClientSession
+    ) -> None:
+        """Handle session event of type ZKP_FOR_BALLOT_ACC."""
+        assert isinstance(event.payload, dict)
+        payload: Dict[str, Any] = event.payload
+        acceptance = payload["acceptance"]
+
+        # Wrap the event in a AbstractMessage and send downstream to the client
+        message = ZKPForBallotAccMessage(acceptance=acceptance)
+        await msg_send(message, session.connection)
+        self.log.info(
+            f"Server sent {acceptance=} for ZKP for Ballot to "
+            f"Client {session.user_id}."
+        )
+
+    async def __handle_event_send_final_tally(
+        self, event: SessionEvent, session: ClientSession
+    ) -> None:
+        """Handle session event of type SEND_FINAL_TALLY."""
+        assert isinstance(event.payload, dict)
+        payload: Dict[str, Any] = event.payload
+        final_tally = payload["final_tally"]
+
+        # Wrap the event in a AbstractMessage and send downstream to the client
+        message = FinalTallyMessage(final_tally=final_tally)
+        await msg_send(message, session.connection)
+        self.log.info(
+            f"Server sent {final_tally=} to Client {session.user_id}."
+        )

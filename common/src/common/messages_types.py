@@ -1,7 +1,7 @@
 """Define message formats."""
 from enum import IntEnum, auto, unique
 from json import JSONDecodeError, JSONDecoder, JSONEncoder
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Union
 
 from websockets.client import WebSocketClientProtocol
 from websockets.server import WebSocketServerProtocol
@@ -99,8 +99,8 @@ class MaskedBallotMessage(AbstractMessage):
         super().__init__()
         self.header.msg_id = MsgId.MASKED_BALLOT
         self.payload = {
-            "masked_vote": masked_ballot,
-            "masked_vote_proof": masked_ballot_proof,
+            "masked_ballot": masked_ballot,
+            "masked_ballot_proof": masked_ballot_proof,
         }
 
 
@@ -117,11 +117,11 @@ class ZKPForBallotAccMessage(AbstractMessage):
 class FinalTallyMessage(AbstractMessage):
     """Send final tally values message."""
 
-    def __init__(self, tally: List[str]) -> None:
+    def __init__(self, final_tally: str) -> None:
         """Create a server final tally message to client."""
         super().__init__()
         self.header.msg_id = MsgId.FINAL_TALLY
-        self.payload = {"tally": tally}
+        self.payload = {"final_tally": final_tally}
 
 
 async def msg_recv(
