@@ -1,10 +1,12 @@
 """Define message formats."""
 from enum import IntEnum, auto, unique
 from json import JSONDecodeError, JSONDecoder, JSONEncoder
-from typing import Any, Dict, Union, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from websockets.client import WebSocketClientProtocol
 from websockets.server import WebSocketServerProtocol
+
+from common.crypto import CurvePoint
 
 SerialMessage = str
 
@@ -21,7 +23,17 @@ class MsgId(IntEnum):
     SEND_QUESTION = auto()
     MASKED_BALLOT = auto()
     ZKP_FOR_BALLOT_ACC = auto()
-    FINAL_TALLY = auto()
+    FINAL_BALLOTS = auto()
+
+
+class MessageEncoder(JSONEncoder):
+    """Extended JSON encoder class."""
+
+    def default(self, o: Any) -> Any:
+        """Return a serializable version of an object."""
+        if hasattr(o, "to_json"):
+            return o.to_json()
+        return super().default(o)
 
 
 class AbstractMessage:
@@ -44,7 +56,7 @@ class AbstractMessage:
 class UserLoginMessage(AbstractMessage):
     """User login message."""
 
-    def __init__(self, public_key) -> None:
+    def __init__(self, public_key: CurvePoint) -> None:
         """Create a user login message to server with public key."""
         super().__init__()
         self.header.msg_id = MsgId.USER_LOGIN
@@ -84,11 +96,16 @@ class ZKPForPubKeyAccMessage(AbstractMessage):
 class SendQuestionMessage(AbstractMessage):
     """Send Question to User message."""
 
-    def __init__(self, the_question: str) -> None:
+    def __init__(
+        self, the_question: str, public_keys: List[Tuple[int, int]]
+    ) -> None:
         """Create a server send question message to client."""
         super().__init__()
         self.header.msg_id = MsgId.SEND_QUESTION
-        self.payload = {"the_question": the_question}
+        self.payload = {
+            "the_question": the_question,
+            "public_keys": public_keys,
+        }
 
 
 class MaskedBallotMessage(AbstractMessage):
@@ -114,14 +131,14 @@ class ZKPForBallotAccMessage(AbstractMessage):
         self.payload = {"acceptance": acceptance}
 
 
-class FinalTallyMessage(AbstractMessage):
-    """Send final tally values message."""
+class FinalBallotsMessage(AbstractMessage):
+    """Send final ballot values message."""
 
-    def __init__(self, final_tally: str) -> None:
-        """Create a server final tally message to client."""
+    def __init__(self, ballots: List[Tuple[int, int]]) -> None:
+        """Create a server final ballots message to client."""
         super().__init__()
-        self.header.msg_id = MsgId.FINAL_TALLY
-        self.payload = {"final_tally": final_tally}
+        self.header.msg_id = MsgId.FINAL_BALLOTS
+        self.payload = {"ballots": ballots}
 
 
 async def msg_recv(
@@ -143,7 +160,7 @@ async def msg_send(
 
 def __serialize(msg: AbstractMessage) -> SerialMessage:
     """Serialize message."""
-    return JSONEncoder().encode(
+    return MessageEncoder().encode(
         {"header": msg.header.__dict__, "payload": msg.payload}
     )
 

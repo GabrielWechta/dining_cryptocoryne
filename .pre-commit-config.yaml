@@ -40,7 +40,12 @@ repos:
       - id: flake8
         additional_dependencies:
           [flake8-bugbear, flake8-docstrings, flake8-keyword-arguments]
-        args: [--config=pyproject.toml]
+        args:
+          [
+            --config=pyproject.toml,
+            --max-line-length=100,
+            "--ignore=D105,D107,D200,D205,D400,E203",
+          ]
         exclude: |
           (?x)(
             ^docs/|
