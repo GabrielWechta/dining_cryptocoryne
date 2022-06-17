@@ -76,7 +76,7 @@ class SetUserIdMessage(AbstractMessage):
 class ZKPForPubKeyMessage(AbstractMessage):
     """Send ZKP for public key message."""
 
-    def __init__(self, signature: Tuple[int, int], exponent: int) -> None:
+    def __init__(self, signature: CurvePoint, exponent: int) -> None:
         """Create a client ZKP message to server."""
         super().__init__()
         self.header.msg_id = MsgId.ZKP_FOR_PUB_KEY
@@ -111,7 +111,9 @@ class SendQuestionMessage(AbstractMessage):
 class MaskedBallotMessage(AbstractMessage):
     """Send masked vote to the server message."""
 
-    def __init__(self, masked_ballot: str, masked_ballot_proof: str) -> None:
+    def __init__(
+        self, masked_ballot: CurvePoint, masked_ballot_proof: str
+    ) -> None:
         """Create a client masked vote message to server."""
         super().__init__()
         self.header.msg_id = MsgId.MASKED_BALLOT

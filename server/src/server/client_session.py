@@ -1,6 +1,7 @@
 """Class representing a client session with the server."""
 
 import asyncio
+from typing import Tuple
 
 import websockets.server as ws
 
@@ -13,7 +14,7 @@ class ClientSession:
         conn: ws.WebSocketServerProtocol,
         user_id: str,
         public_key: str,
-        public_key_proof: str,
+        public_key_proof: Tuple[int, int],
     ) -> None:
         """Initialize a client session."""
         self.event_queue: asyncio.Queue = asyncio.Queue()

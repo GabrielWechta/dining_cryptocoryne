@@ -4,11 +4,12 @@ import asyncio
 import logging
 import os
 from asyncio import Event
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
 
+from common import NUM_PARTICIPANTS
 from server.session_downstream_handler import SessionDownstreamHandler
 from server.session_upstream_handler import SessionUpstreamHandler
 
@@ -30,7 +31,6 @@ class SessionsManager:
         self.log = logging.getLogger("logger")
         self.sessions: Dict[str, ClientSession] = {}
         self.transcripts: Dict[str, Dict[str, Any]] = {}
-        self.participants_number = int(os.environ["PARTICIPANTS_NUMBER"])
         self.the_question = os.environ["THE_QUESTION"]
         # Instantiate the traffic handlers
         self.downstream_handler = SessionDownstreamHandler(
@@ -45,7 +45,7 @@ class SessionsManager:
         conn: WebSocketServerProtocol,
         user_id: str,
         public_key: str,
-        public_key_proof: tuple,
+        public_key_proof: Tuple[int, int],
     ) -> None:
         """Handle a logged-in user."""
         # Save the session to have consistent state when
@@ -58,7 +58,7 @@ class SessionsManager:
         )
         self.sessions[user_id] = session
 
-        await self.__wait_for_everybody_next_send_question()
+        await self.__wait_for_everybody_next_send_question(user_id)
 
         try:
             # Use fork-join semantics to run both upstream and
@@ -74,10 +74,13 @@ class SessionsManager:
     async def __check_sessions_count(self, flag: Event) -> None:
         while True:
             await asyncio.sleep(0.1)
-            if len(self.sessions) >= self.participants_number:
+            if len(self.sessions) >= NUM_PARTICIPANTS:
                 flag.set()
+                return
 
-    async def __wait_for_everybody_next_send_question(self) -> None:
+    async def __wait_for_everybody_next_send_question(
+        self, user_id: str
+    ) -> None:
         self.log.info(
             "Server waits for everybody before sending the question."
         )
@@ -86,13 +89,16 @@ class SessionsManager:
         await flag.wait()
 
         send_question_event = SendQuestionEvent(
-            payload={"the_question": self.the_question}
+            payload={
+                "the_question": self.the_question,
+                "public_keys": [
+                    session.public_key for session in self.sessions.values()
+                ],
+            }
         )
-        for user_id in self.sessions.keys():
-            self.log.info(f"Servers sends question to {user_id}.")
-            await self.downstream_handler.send_event(
-                send_question_event, user_id
-            )
+
+        self.log.info(f"Servers sends question to {user_id}.")
+        await self.downstream_handler.send_event(send_question_event, user_id)
 
     async def __handle_connection_closed(
         self, user_id: str, exception: ConnectionClosed
