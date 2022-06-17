@@ -8,6 +8,7 @@ import time
 
 import websockets.client as ws
 
+from .crypto import Crypto
 from common.messages_types import (
     AbstractMessage,
     MaskedBallotMessage,
@@ -37,8 +38,8 @@ class WebsocketInterface:
         self.log = logging.getLogger("logger")
         self.participants_number = int(os.environ["PARTICIPANTS_NUMBER"])
         self.always_vote = always_vote
-
         self.user_id = None  # this will be set up by a message from the server
+        self.crypto = Crypto()
         self.message_handlers = {
             MsgId.SEND_QUESTION: self._steer_message_send_question,
             MsgId.FINAL_TALLY: self._steer_message_final_tally,
@@ -59,9 +60,7 @@ class WebsocketInterface:
                 "Successfully connected to the server. Running login..."
             )
 
-            # TODO change public key to real public key
-            # C ---> S
-            public_key = str(hash(time.time()))
+            public_key = self.crypto.get_public_key()
             await msg_send(UserLoginMessage(public_key=public_key), conn)
             self.log.info(f"Client sends login message - {public_key=}.")
 
@@ -70,14 +69,9 @@ class WebsocketInterface:
             self.user_id = user_id
             self.log.info(f"Client got {user_id=}.")
 
-            # TODO change proof to real proof, I assumed that proof is of type
-            #  str, but for me it can be even of type rainbow-star, change in.
-            # C ---> S
-            proof = "42"
-            self.log.info(
-                f"Client {self.user_id} sends ZKP for pub key - {proof=}."
-            )
-            await msg_send(ZKPForPubKeyMessage(proof=proof), conn)
+            signature, exponent = self.crypto.get_schnorr_signature(self.user_id)
+            self.log.info(f"Client {user_id} sends ZKP for pub key - {signature=} {exponent=}.")
+            await msg_send(ZKPForPubKeyMessage(signature=signature, exponent=exponent), conn)
 
             # C <--- S
             recv_acceptance_message = await msg_recv(conn)
