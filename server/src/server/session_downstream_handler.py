@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict
 
 from common.messages_types import (
-    FinalTallyMessage,
+    FinalBallotsMessage,
     SendQuestionMessage,
     ZKPForBallotAccMessage,
     msg_send,
@@ -36,7 +36,7 @@ class SessionDownstreamHandler:
             EventType.ZKP_FOR_BALLOT_ACC:
                 self.__handle_event_zkp_for_ballot_acc,
             # fmt: on
-            EventType.SEND_FINAL_TALLY: self.__handle_event_send_final_tally,
+            EventType.SEND_BALLOTS: self.__handle_event_send_ballots,
         }
 
     async def handle_downstream(self, session: ClientSession) -> None:
@@ -74,9 +74,12 @@ class SessionDownstreamHandler:
         assert isinstance(event.payload, dict)
         payload: Dict[str, Any] = event.payload
         the_question = payload["the_question"]
+        public_keys = payload["public_keys"]
 
         # Wrap the event in a AbstractMessage and send downstream to the client
-        message = SendQuestionMessage(the_question=the_question)
+        message = SendQuestionMessage(
+            the_question=the_question, public_keys=public_keys
+        )
         await msg_send(message, session.connection)
         self.log.info(
             f"Server sent {the_question=} to Client {session.user_id}."
@@ -98,17 +101,15 @@ class SessionDownstreamHandler:
             f"Client {session.user_id}."
         )
 
-    async def __handle_event_send_final_tally(
+    async def __handle_event_send_ballots(
         self, event: SessionEvent, session: ClientSession
     ) -> None:
-        """Handle session event of type SEND_FINAL_TALLY."""
+        """Handle session event of type SEND_BALLOTS."""
         assert isinstance(event.payload, dict)
         payload: Dict[str, Any] = event.payload
-        final_tally = payload["final_tally"]
+        ballots = payload["ballots"]
 
         # Wrap the event in a AbstractMessage and send downstream to the client
-        message = FinalTallyMessage(final_tally=final_tally)
+        message = FinalBallotsMessage(ballots=ballots)
         await msg_send(message, session.connection)
-        self.log.info(
-            f"Server sent {final_tally=} to Client {session.user_id}."
-        )
+        self.log.info(f"Server sent {ballots=} to Client {session.user_id}.")

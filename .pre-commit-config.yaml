@@ -44,7 +44,7 @@ repos:
           [
             --config=pyproject.toml,
             --max-line-length=100,
-            "--ignore=D105,D107,D200,D205,D400,E203",
+            "--ignore=D105,D107,D200,D205,D400,E203,W503",
           ]
         exclude: |
           (?x)(

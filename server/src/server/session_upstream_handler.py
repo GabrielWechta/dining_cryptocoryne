@@ -1,14 +1,14 @@
 """Upstream traffic handler."""
 import asyncio
 import logging
-import os
 from asyncio import Event
 from typing import Dict
 
+from common import NUM_PARTICIPANTS
 from common.messages_types import AbstractMessage, MsgId, msg_recv
 from server.client_session import ClientSession
 from server.session_event import (
-    SendFinalTallyEvent,
+    SendBallotsEvent,
     SessionEvent,
     ZKPForBallotAccEvent,
 )
@@ -32,7 +32,6 @@ class SessionUpstreamHandler:
         self.message_handlers = {
             MsgId.MASKED_BALLOT: self._steer_message_masked_ballot,
         }
-        self.participants_number = int(os.environ["PARTICIPANTS_NUMBER"])
 
     async def handle_upstream(self, session: ClientSession) -> None:
         """Handle upstream traffic, i.e. client to server.
@@ -60,14 +59,13 @@ class SessionUpstreamHandler:
     async def __check_ballot_count(self, flag: Event) -> None:
         while True:
             await asyncio.sleep(0.1)
-            ballot_count = sum(
-                [
-                    1 if session.masked_ballot is not None else 0
-                    for session in self.sessions.values()
-                ]
-            )
-            if ballot_count >= self.participants_number:
+            ballots = [
+                session.masked_ballot for session in self.sessions.values()
+            ]
+            ballot_count = sum(ballot is not None for ballot in ballots)
+            if ballot_count >= NUM_PARTICIPANTS:
                 flag.set()
+                return
 
     async def __wait_for_everybody_vote_next_send_final_tally(
         self, session: ClientSession
@@ -81,14 +79,9 @@ class SessionUpstreamHandler:
         await flag.wait()
 
         # TODO get aggregated final tally
-        final_tally = "69"
-        send_final_tally_event = SendFinalTallyEvent(
-            payload={"final_tally": final_tally}
-        )
-        await self.__send_event(send_final_tally_event, session)
-        self.log.info(
-            f"Server sent {final_tally=} to Client {session.user_id}."
-        )
+        ballots = [session.masked_ballot for session in self.sessions.values()]
+        send_ballots_event = SendBallotsEvent(payload={"ballots": ballots})
+        await self.__send_event(send_ballots_event, session)
 
     async def _steer_message_masked_ballot(
         self, message: AbstractMessage, session: ClientSession

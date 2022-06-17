@@ -1,6 +1,6 @@
 """Clientside crytography module."""
 import random
-from typing import List, Tuple, Union
+from typing import Any, List, Tuple, Union
 
 from Cryptodome.Hash import SHA3_256
 
@@ -13,7 +13,7 @@ class Crypto:
     def __init__(self) -> None:
         """ """
         self.secret = random.randrange(1, CURVE_ORD)
-        self.client_id = 0
+        self.client_id: Any = None
 
     def get_public_key(self) -> CurvePoint:
         """Get public key, i.e. g^x, where g is the generator and x is the client's secret."""
@@ -41,9 +41,11 @@ class Crypto:
         public_keys = [CurvePoint(key) for key in public_keys]
         previous_keys = sum(public_keys[: self.client_id])
         next_keys = sum(public_keys[(self.client_id + 1) :])
-        if previous_keys and next_keys:
-            return (previous_keys + next_keys * (-1 % CURVE_ORD)) * self.secret
-        return previous_keys * self.secret
+        if previous_keys and not next_keys:
+            return previous_keys * self.secret
+        if next_keys and not previous_keys:
+            return (next_keys * (-1 % CURVE_ORD)) * self.secret
+        return (previous_keys + next_keys * (-1 % CURVE_ORD)) * self.secret
 
     def get_ballot(
         self, vote: int, public_keys: List[Tuple[int, int]]

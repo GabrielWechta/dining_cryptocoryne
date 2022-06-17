@@ -10,7 +10,7 @@ class EventType(IntEnum):
 
     SEND_QUESTION = auto()
     ZKP_FOR_BALLOT_ACC = auto()
-    SEND_FINAL_TALLY = auto()
+    SEND_BALLOTS = auto()
 
 
 class SessionEvent:
@@ -42,9 +42,9 @@ class ZKPForBallotAccEvent(SessionEvent):
         super().__init__(EventType.ZKP_FOR_BALLOT_ACC, payload)
 
 
-class SendFinalTallyEvent(SessionEvent):
-    """Send final tally event."""
+class SendBallotsEvent(SessionEvent):
+    """Send masked ballots event."""
 
     def __init__(self, payload: Dict[str, Any]) -> None:
-        """Initialize send final tally event."""
-        super().__init__(EventType.SEND_FINAL_TALLY, payload)
+        """Initialize send ballots event."""
+        super().__init__(EventType.SEND_BALLOTS, payload)

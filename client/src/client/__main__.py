@@ -8,7 +8,7 @@ def __parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Process input to Client.")
 
     parser.add_argument(
-        "--always_vote",
+        "--always-vote",
         type=str,
         default=None,
         choices=["yes", "no"],

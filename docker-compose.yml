@@ -25,10 +25,9 @@ services:
     build:
       context: .
       target: client
-    container_name: ${YES_CLIENT_CONTAINER_NAME}
     depends_on:
       - server-service
-    command: python -u -m client
+    command: python -u -m client --always-vote=yes
     env_file:
       - .env
     networks:

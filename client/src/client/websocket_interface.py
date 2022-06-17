@@ -2,13 +2,12 @@
 
 import asyncio
 import logging
-import os
 import ssl
-import time
+from typing import Any
 
 import websockets.client as ws
 
-from .crypto import Crypto
+from common import NUM_PARTICIPANTS
 from common.messages_types import (
     AbstractMessage,
     MaskedBallotMessage,
@@ -18,6 +17,8 @@ from common.messages_types import (
     msg_recv,
     msg_send,
 )
+
+from .crypto import Crypto
 
 
 class RejectZKPException(Exception):
@@ -36,13 +37,14 @@ class WebsocketInterface:
     def __init__(self, always_vote: str = None) -> None:
         """Construct a websocket interface instance."""
         self.log = logging.getLogger("logger")
-        self.participants_number = int(os.environ["PARTICIPANTS_NUMBER"])
         self.always_vote = always_vote
-        self.user_id = None  # this will be set up by a message from the server
+        self.user_id: Any = (
+            None  # this will be set up by a message from the server
+        )
         self.crypto = Crypto()
         self.message_handlers = {
             MsgId.SEND_QUESTION: self._steer_message_send_question,
-            MsgId.FINAL_TALLY: self._steer_message_final_tally,
+            MsgId.FINAL_BALLOTS: self._steer_message_final_ballots,
         }
         self.upstream_message_queue: asyncio.Queue = asyncio.Queue()
         self.downstream_message_queue: asyncio.Queue = asyncio.Queue()
@@ -69,9 +71,16 @@ class WebsocketInterface:
             self.user_id = user_id
             self.log.info(f"Client got {user_id=}.")
 
-            signature, exponent = self.crypto.get_schnorr_signature(self.user_id)
-            self.log.info(f"Client {user_id} sends ZKP for pub key - {signature=} {exponent=}.")
-            await msg_send(ZKPForPubKeyMessage(signature=signature, exponent=exponent), conn)
+            signature, exponent = self.crypto.get_schnorr_signature(
+                self.user_id
+            )
+            self.log.info(
+                f"Client {user_id} sends ZKP for pub key - {signature=} {exponent=}."
+            )
+            await msg_send(
+                ZKPForPubKeyMessage(signature=signature, exponent=exponent),
+                conn,
+            )
 
             # C <--- S
             recv_acceptance_message = await msg_recv(conn)
@@ -123,8 +132,7 @@ class WebsocketInterface:
                 )
             else:
                 self.log.warning(
-                    "Received unexpected message with ID:"
-                    + f"{message.header.msg_id}"
+                    f"Received unexpected message with ID: {message.header.msg_id}"
                 )
 
     def __parse_acceptance(
@@ -143,28 +151,25 @@ class WebsocketInterface:
     ) -> None:
         """Steer message of type SEND_QUESTION."""
         the_question = message.payload["the_question"]
+        public_keys = message.payload["public_keys"]
         self.log.info(
             f"Client {self.user_id} got this question: {the_question}."
         )
+        self.log.info(f"{public_keys=}.")
         print(the_question)  # printing the question to the User
-        vote_str = None
+        vote_repr: Any = None
         if self.always_vote is not None:
             vote_repr = 1 if self.always_vote == "yes" else 0
 
         else:
-            while vote_str is None:
-                vote_str = input("Your vote:")
-                if vote_str.casefold() == "yes".casefold():
-                    vote_repr = 1
-                elif vote_str.casefold() == "no".casefold():
-                    vote_repr = 0
-                else:
-                    print("Type 'yes' or 'no'.")
-                    vote_str = None
+            vote_mapping = {"yes": 1, "no": 0}
+            while vote_repr is None:
+                vote_str = input("Your vote:").casefold()
+                vote_repr = vote_mapping.get(vote_str)
         print(vote_repr)
 
         # TODO compute masked ballot and proof
-        masked_ballot = "420"
+        masked_ballot = self.crypto.get_ballot(vote_repr, public_keys)
         masked_ballot_proof = "2137"
         await msg_send(
             MaskedBallotMessage(
@@ -184,17 +189,15 @@ class WebsocketInterface:
             zkp_type="ZKP for ballot",
         )
 
-    async def _steer_message_final_tally(
+    async def _steer_message_final_ballots(
         self, message: AbstractMessage, conn: ws.WebSocketClientProtocol
     ) -> None:
-        """Steer message of type FINAL_TALLY."""
-        final_tally = message.payload["final_tally"]
-        self.log.info(f"Client {self.user_id} got {final_tally=}.")
-
-        # TODO Compute here voting result
-        result_votes = 1
+        """Steer message of type FINAL_BALLOTS."""
+        ballots = message.payload["ballots"]
+        self.log.info(f"Client {self.user_id} got {ballots=}.")
+        result_votes = self.crypto.get_tally(ballots)
         print(
             "Voting finished with:\n"
             f"{result_votes} - 'yes' votes\n"
-            f"{self.participants_number - result_votes} - 'no' votes\n"
+            f"{NUM_PARTICIPANTS - result_votes} - 'no' votes\n"
         )

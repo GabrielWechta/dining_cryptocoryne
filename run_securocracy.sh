@@ -6,7 +6,7 @@ docker-compose down --remove-orphans
 # Start the server
 docker-compose up --build --detach server-service || { echo "Composing server service failed" && exit 1; }
 # Start the client
-#docker-compose up --build --detach yes-client-service || { echo "Composing echo service failed" && docker-compose down && exit 1; }
+docker-compose up --build --detach --scale yes-client-service=2 || { echo "Composing echo service failed" && docker-compose down && exit 1; }
 
 echo "!!!Setting up local environment..."
 set -a
