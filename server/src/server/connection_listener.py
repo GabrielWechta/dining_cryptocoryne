@@ -107,7 +107,7 @@ class ConnectionListener:
                 conn=conn,
                 user_id=str(user_id),
                 public_key=public_key,
-                proof=(signature, exponent),
+                public_key_proof=(signature, exponent),
             )
 
         except ServerAuthFailed:
