@@ -13,6 +13,7 @@ from common.messages_types import (
     MaskedBallotMessage,
     MsgId,
     UserLoginMessage,
+    ZKPForBallotProofMessage,
     ZKPForPubKeyMessage,
     msg_recv,
     msg_send,
@@ -44,6 +45,7 @@ class WebsocketInterface:
         self.crypto = Crypto()
         self.message_handlers = {
             MsgId.SEND_QUESTION: self._steer_message_send_question,
+            MsgId.BALLOT_CHALLENGE: self._steer_message_ballot_challenge,
             MsgId.FINAL_BALLOTS: self._steer_message_final_ballots,
         }
         self.upstream_message_queue: asyncio.Queue = asyncio.Queue()
@@ -168,21 +170,30 @@ class WebsocketInterface:
                 vote_repr = vote_mapping.get(vote_str)
         print(vote_repr)
 
-        # TODO compute masked ballot and proof
-        masked_ballot = self.crypto.get_ballot(vote_repr, public_keys)
-        masked_ballot_proof = "2137"
+        masked_ballot, proof = self.crypto.get_ballot(vote_repr, public_keys)
         await msg_send(
             MaskedBallotMessage(
                 masked_ballot=masked_ballot,
-                masked_ballot_proof=masked_ballot_proof,
+                proof=proof,
             ),
             conn,
         )
         self.log.info(
             f"Client {self.user_id} sends masked vote - {masked_ballot=} "
-            f"with proof {masked_ballot_proof=}."
+            f"with part one of proof {proof=}."
         )
 
+    async def _steer_message_ballot_challenge(
+        self, message: AbstractMessage, conn: ws.WebSocketClientProtocol
+    ) -> None:
+        challenge = message.payload["challenge"]
+        proof = self.crypto.get_second_phase_ballot_validity_proof(challenge)
+        await msg_send(
+            ZKPForBallotProofMessage(
+                proof=proof,
+            ),
+            conn,
+        )
         recv_acceptance_message = await msg_recv(conn)
         self.__parse_acceptance(
             recv_acceptance_message=recv_acceptance_message,

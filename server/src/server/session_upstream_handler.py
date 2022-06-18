@@ -11,7 +11,10 @@ from server.session_event import (
     SendBallotsEvent,
     SessionEvent,
     ZKPForBallotAccEvent,
+    ZKPForBallotChallengeEvent,
 )
+
+from .crypto import Crypto
 
 
 class SessionUpstreamHandler:
@@ -31,6 +34,7 @@ class SessionUpstreamHandler:
         self.sessions = sessions
         self.message_handlers = {
             MsgId.MASKED_BALLOT: self._steer_message_masked_ballot,
+            MsgId.BALLOT_ZKP: self._steer_message_ballot_zkp,
         }
 
     async def handle_upstream(self, session: ClientSession) -> None:
@@ -63,11 +67,14 @@ class SessionUpstreamHandler:
                 session.masked_ballot for session in self.sessions.values()
             ]
             ballot_count = sum(ballot is not None for ballot in ballots)
-            if ballot_count >= NUM_PARTICIPANTS:
+
+            if ballot_count >= NUM_PARTICIPANTS and all(
+                session.ballot_accepted for session in self.sessions.values()
+            ):
                 flag.set()
                 return
 
-    async def __wait_for_everybody_vote_next_send_final_tally(
+    async def __wait_for_everybody_vote_next_send_all_ballots(
         self, session: ClientSession
     ) -> None:
         self.log.info(
@@ -78,7 +85,6 @@ class SessionUpstreamHandler:
         asyncio.create_task(self.__check_ballot_count(flag))
         await flag.wait()
 
-        # TODO get aggregated final tally
         ballots = [session.masked_ballot for session in self.sessions.values()]
         send_ballots_event = SendBallotsEvent(payload={"ballots": ballots})
         await self.__send_event(send_ballots_event, session)
@@ -87,25 +93,48 @@ class SessionUpstreamHandler:
         self, message: AbstractMessage, session: ClientSession
     ) -> None:
         masked_ballot = message.payload["masked_ballot"]
-        masked_ballot_proof = message.payload["masked_ballot_proof"]
-        self.sessions[session.user_id].masked_ballot = masked_ballot
-        self.sessions[
-            session.user_id
-        ].masked_ballot_proof = masked_ballot_proof
+        masked_ballot_proof = message.payload["proof"]
         self.log.info(
             f"Server got {masked_ballot=}, with {masked_ballot_proof=} "
             f"from Client {session.user_id}."
         )
-        # TODO check if proof is good
+        self.sessions[session.user_id].masked_ballot = masked_ballot
+        challenge = Crypto.get_zkp_challenge()
+        self.sessions[session.user_id].challenge = challenge
+        self.sessions[
+            session.user_id
+        ].masked_ballot_proof = masked_ballot_proof
+        zkp_ballot_challenge_event = ZKPForBallotChallengeEvent(
+            payload={"challenge": challenge}
+        )
+        await self.__send_event(zkp_ballot_challenge_event, session)
 
-        # TODO multiply vote aggregator
-        acceptance = True
+    async def _steer_message_ballot_zkp(
+        self, message: AbstractMessage, session: ClientSession
+    ) -> None:
+        masked_ballot_proof = message.payload["proof"]
+        self.sessions[session.user_id].masked_ballot_proof.update(
+            masked_ballot_proof
+        )
+        self.log.info(
+            f"Server got second part of ZKP, {masked_ballot_proof=} "
+            f"from Client {session.user_id}."
+        )
+        public_keys = [s.public_key for s in self.sessions.values()]
+        session = self.sessions[session.user_id]
+
+        acceptance = Crypto.verify_ballot_zkp(
+            client_id=session.user_id,
+            public_keys=public_keys,
+            challenge=session.challenge,
+            proof=session.masked_ballot_proof,
+        )
+        self.sessions[session.user_id].ballot_accepted = acceptance
         zkp_ballot_acc_event = ZKPForBallotAccEvent(
             payload={"acceptance": acceptance}
         )
         await self.__send_event(zkp_ballot_acc_event, session)
-
-        await self.__wait_for_everybody_vote_next_send_final_tally(session)
+        await self.__wait_for_everybody_vote_next_send_all_ballots(session)
 
     async def __send_event(
         self, event: SessionEvent, session: ClientSession

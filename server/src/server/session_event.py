@@ -9,6 +9,7 @@ class EventType(IntEnum):
     """Session event type."""
 
     SEND_QUESTION = auto()
+    ZKP_FOR_BALLOT_CHALLENGE = auto()
     ZKP_FOR_BALLOT_ACC = auto()
     SEND_BALLOTS = auto()
 
@@ -32,6 +33,14 @@ class SendQuestionEvent(SessionEvent):
     def __init__(self, payload: Dict[str, Any]) -> None:
         """Initialize send question message event."""
         super().__init__(EventType.SEND_QUESTION, payload)
+
+
+class ZKPForBallotChallengeEvent(SessionEvent):
+    """Challenge of ZKP for ballot event."""
+
+    def __init__(self, payload: Dict[str, Any]) -> None:
+        """Initialize challenge of ZKP for ballot event."""
+        super().__init__(EventType.ZKP_FOR_BALLOT_CHALLENGE, payload)
 
 
 class ZKPForBallotAccEvent(SessionEvent):

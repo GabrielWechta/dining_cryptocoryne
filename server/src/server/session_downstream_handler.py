@@ -7,6 +7,7 @@ from common.messages_types import (
     FinalBallotsMessage,
     SendQuestionMessage,
     ZKPForBallotAccMessage,
+    ZKPForBallotChallengeMessage,
     msg_send,
 )
 from server.client_session import ClientSession
@@ -33,6 +34,8 @@ class SessionDownstreamHandler:
         self.event_handlers = {
             EventType.SEND_QUESTION: self.__handle_event_send_question,
             # fmt: off
+            EventType.ZKP_FOR_BALLOT_CHALLENGE:
+                self.__handle_event_zkp_for_ballot_challenge,
             EventType.ZKP_FOR_BALLOT_ACC:
                 self.__handle_event_zkp_for_ballot_acc,
             # fmt: on
@@ -83,6 +86,19 @@ class SessionDownstreamHandler:
         await msg_send(message, session.connection)
         self.log.info(
             f"Server sent {the_question=} to Client {session.user_id}."
+        )
+
+    async def __handle_event_zkp_for_ballot_challenge(
+        self, event: SessionEvent, session: ClientSession
+    ) -> None:
+        """Handle session event of type ZKP_FOR_BALLOT_CHALLENGE."""
+        assert isinstance(event.payload, dict)
+        challenge = event.payload["challenge"]
+        message = ZKPForBallotChallengeMessage(challenge=challenge)
+        await msg_send(message, session.connection)
+        self.log.info(
+            f"Server sent {challenge=} for ZKP for Ballot to "
+            f"Client {session.user_id}."
         )
 
     async def __handle_event_zkp_for_ballot_acc(

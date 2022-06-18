@@ -44,7 +44,7 @@ class SessionsManager:
         self,
         conn: WebSocketServerProtocol,
         user_id: str,
-        public_key: str,
+        public_key: Tuple[int, int],
         public_key_proof: Tuple[int, int],
     ) -> None:
         """Handle a logged-in user."""
