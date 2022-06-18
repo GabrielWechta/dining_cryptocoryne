@@ -1,7 +1,7 @@
 """Class representing a client session with the server."""
 
 import asyncio
-from typing import Tuple
+from typing import Optional, Tuple
 
 import websockets.server as ws
 
@@ -13,7 +13,7 @@ class ClientSession:
         self,
         conn: ws.WebSocketServerProtocol,
         user_id: str,
-        public_key: str,
+        public_key: Tuple[int, int],
         public_key_proof: Tuple[int, int],
     ) -> None:
         """Initialize a client session."""
@@ -25,5 +25,7 @@ class ClientSession:
         self.public_key = public_key
         self.public_key_proof = public_key_proof
         # those fields will be set during protocol run
-        self.masked_ballot = None
-        self.masked_ballot_proof = None
+        self.masked_ballot: Optional[Tuple[int, int]] = None
+        self.masked_ballot_proof = {}
+        self.challenge: Optional[int] = None
+        self.ballot_accepted = False

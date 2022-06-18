@@ -22,6 +22,8 @@ class MsgId(IntEnum):
     ZKP_FOR_PUB_KEY_ACC = auto()
     SEND_QUESTION = auto()
     MASKED_BALLOT = auto()
+    BALLOT_CHALLENGE = auto()
+    BALLOT_ZKP = auto()
     ZKP_FOR_BALLOT_ACC = auto()
     FINAL_BALLOTS = auto()
 
@@ -112,15 +114,35 @@ class MaskedBallotMessage(AbstractMessage):
     """Send masked vote to the server message."""
 
     def __init__(
-        self, masked_ballot: CurvePoint, masked_ballot_proof: str
+        self, masked_ballot: CurvePoint, proof: Dict[str, CurvePoint]
     ) -> None:
         """Create a client masked vote message to server."""
         super().__init__()
         self.header.msg_id = MsgId.MASKED_BALLOT
         self.payload = {
             "masked_ballot": masked_ballot,
-            "masked_ballot_proof": masked_ballot_proof,
+            "proof": proof,
         }
+
+
+class ZKPForBallotChallengeMessage(AbstractMessage):
+    """Send challenge of ZKP for ballot."""
+
+    def __init__(self, challenge: int) -> None:
+        """Create a server challenge message to client."""
+        super().__init__()
+        self.header.msg_id = MsgId.BALLOT_CHALLENGE
+        self.payload = {"challenge": challenge}
+
+
+class ZKPForBallotProofMessage(AbstractMessage):
+    """Send second stage of ZKP for ballot."""
+
+    def __init__(self, proof: Dict[str, CurvePoint]) -> None:
+        """Create a client ZKP proof message to server."""
+        super().__init__()
+        self.header.msg_id = MsgId.BALLOT_ZKP
+        self.payload = {"proof": proof}
 
 
 class ZKPForBallotAccMessage(AbstractMessage):

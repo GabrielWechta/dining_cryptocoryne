@@ -1,5 +1,5 @@
 """Crytography module used both by clients and the server."""
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 from Cryptodome.PublicKey import ECC
 
@@ -30,6 +30,23 @@ class CurvePoint:
     def to_json(self) -> Tuple[int, int]:
         """Turn the point into a serializable tuple."""
         return int(self.point.x), int(self.point.y)
+
+
+def calculate_ballot_mask(
+    client_id: int, public_keys: List[Tuple[int, int]]
+) -> CurvePoint:
+    """
+    Use public keys of other voters to calculate g^y for specified voter,
+    which serves as a mask for casting votes.
+    """
+    public_keys = [CurvePoint(key) for key in public_keys]
+    previous_keys = sum(public_keys[:client_id])
+    next_keys = sum(public_keys[(client_id + 1) :])
+    if previous_keys and not next_keys:
+        return previous_keys
+    if next_keys and not previous_keys:
+        return next_keys * (-1 % CURVE_ORD)
+    return previous_keys + next_keys * (-1 % CURVE_ORD)
 
 
 CURVE_NAME = "p256"
