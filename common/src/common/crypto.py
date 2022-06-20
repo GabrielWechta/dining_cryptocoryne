@@ -27,6 +27,9 @@ class CurvePoint:
     def __eq__(self, other: Any) -> bool:
         return self.point == other.point
 
+    def __repr__(self):
+        return f"{int(self.point.x), int(self.point.y)}"
+
     def to_json(self) -> Tuple[int, int]:
         """Turn the point into a serializable tuple."""
         return int(self.point.x), int(self.point.y)
