@@ -20,6 +20,7 @@ services:
       - ${PORT}:${PORT}
     volumes:
       - ./log:/log
+    hostname: securocracy-server
 
   yes-client-service:
     build:
@@ -32,3 +33,4 @@ services:
       - .env
     networks:
       - securocracy-network
+    hostname: gabriel

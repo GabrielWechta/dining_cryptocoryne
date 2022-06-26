@@ -14,8 +14,8 @@ RUN pip install -e common
 RUN mkdir log
 
 # Copy resources
-COPY resources/certs/securocracy_cert.pem resources/certs/securocracy_cert.pem
-COPY resources/certs/securocracy_key.pem resources/certs/securocracy_key.pem
+COPY resources/certs/server_securocracy_cert.pem resources/certs/server_securocracy_cert.pem
+COPY resources/certs/server_securocracy_key.pem resources/certs/server_securocracy_key.pem
 
 CMD ["python", "-u", "-m", "server"]
 
@@ -35,5 +35,5 @@ RUN pip install -e common
 RUN mkdir log
 
 # Copy resources
-COPY resources/certs/securocracy_cert.pem resources/certs/securocracy_cert.pem
+COPY resources/certs/client_securocracy_cert.pem resources/certs/client_securocracy_cert.pem
 CMD ["python", "-u", "-m", "client"]

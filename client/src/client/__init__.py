@@ -32,7 +32,7 @@ class Client:
         # Parsing env variables
         self.server_hostname = os.environ["SERVER_HOSTNAME"]
         self.server_port = os.environ["PORT"]
-        self.certpath = os.environ["SELF_SIGNED_CERT_PATH"]
+        self.certpath = os.environ["CLIENT_SELF_SIGNED_CERT_PATH"]
 
         self.event_loop = asyncio.get_event_loop()
 

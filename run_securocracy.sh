@@ -10,14 +10,15 @@ docker-compose up --build --detach --scale yes-client-service=2 || { echo "Compo
 
 echo "!!!Setting up local environment..."
 set -a
-. ./.env
+source .env
 set +a
 
 # Overwrite the hostname with localhost
 export SERVER_HOSTNAME=localhost
 
 pip install -e client
-echo "!!!Running local client..."
+echo "Running local client..."
+clear
 python -m client
 #
 #docker-compose down

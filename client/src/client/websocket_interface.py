@@ -55,8 +55,7 @@ class WebsocketInterface:
         """Connect to the server."""
         # getting TLS context
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ssl_context.load_verify_locations(certpath)
-        ssl_context.check_hostname = False
+        ssl_context = _load_location(ssl_context, certpath)
 
         self.log.info(f"Client is connecting to the server at {url}...")
         async with ws.connect(url, ssl=ssl_context) as conn:
@@ -212,3 +211,13 @@ class WebsocketInterface:
             f"{result_votes} - 'yes' votes\n"
             f"{NUM_PARTICIPANTS - result_votes} - 'no' votes\n"
         )
+
+
+def _load_location(
+    ssl_context: ssl.SSLContext, certpath: str
+) -> ssl.SSLContext:
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    ssl_context.load_verify_locations(certpath)
+
+    return ssl_context
