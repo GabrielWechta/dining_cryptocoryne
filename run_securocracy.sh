@@ -17,7 +17,8 @@ set +a
 export SERVER_HOSTNAME=localhost
 
 pip install -e client
-echo "!!!Running local client..."
+echo "Running local client..."
+clear
 python -m client
 #
 #docker-compose down
