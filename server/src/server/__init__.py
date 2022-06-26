@@ -20,8 +20,8 @@ class Server:
 
         self.hostname = os.environ["SERVER_HOSTNAME"]
         self.port = int(os.environ["PORT"])
-        self.certpath = os.environ["SELF_SIGNED_CERT_PATH"]
-        self.keypath = os.environ["PRIVATE_KEY_PATH"]
+        self.certpath = os.environ["SERVER_SELF_SIGNED_CERT_PATH"]
+        self.keypath = os.environ["SERVER_PRIVATE_KEY_PATH"]
 
         # Prepare resources
         self.event_loop = asyncio.get_event_loop()

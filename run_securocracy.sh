@@ -10,7 +10,7 @@ docker-compose up --build --detach --scale yes-client-service=2 || { echo "Compo
 
 echo "!!!Setting up local environment..."
 set -a
-. ./.env
+source .env
 set +a
 
 # Overwrite the hostname with localhost
